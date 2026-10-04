@@ -146,10 +146,28 @@ class RFMEngine:
             "Occasional (R>=4, F<=2), Regular (all remaining active buyers). No subjective labeling."
         )
 
+        # Build customer drilldown records
+        customer_scores: List[Dict[str, Any]] = []
+        for cid, row in cust_df.iterrows():
+            customer_scores.append({
+                "customer_id": str(cid),
+                "recency_days": int(row["recency"]),
+                "frequency_orders": int(row["frequency"]),
+                "total_spend": round(float(row["monetary"]), 2),
+                "aov": round(float(row["monetary"]) / max(1, int(row["frequency"])), 2),
+                "r_score": int(row["r_score"]),
+                "f_score": int(row["f_score"]),
+                "m_score": int(row["m_score"]),
+                "segment": str(row["segment"]),
+            })
+        # Sort by total spend descending
+        customer_scores.sort(key=lambda x: x["total_spend"], reverse=True)
+
         return RFMAnalysisResult(
             reference_date=ref_date.strftime("%Y-%m-%d"),
             total_customers=total_customers,
             segments=segments,
             grid_5x5=grid_5x5,
             rules_disclaimer=rules_disclaimer,
+            customer_scores=customer_scores,
         )

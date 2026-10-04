@@ -16,6 +16,8 @@ from .types import (
     EvidencePayload,
 )
 
+from .number_guard import NumberGuard, VerificationReport
+
 __all__ = [
     "AnalyticsPipeline",
     "DatasetMetadata",
@@ -26,4 +28,6 @@ __all__ = [
     "StarSchemaModel",
     "DeterministicInsight",
     "EvidencePayload",
+    "NumberGuard",
+    "VerificationReport",
 ]

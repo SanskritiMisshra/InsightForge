@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, Response, PlainTextResponse
 from pydantic import BaseModel
 
-from packages.analytics_engine import AnalyticsPipeline
+from packages.analytics_engine import AnalyticsPipeline, NumberGuard
 from packages.analytics_engine.pipeline import AnalyticsPipelineResult
 from packages.analytics_engine.report_generator import ExecutiveReportGenerator
 from packages.analytics_engine.powerbi_packager import PowerBIPackager
@@ -159,6 +159,162 @@ def execute_sql(req: SQLRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DuckDB Execution Error: {str(e)}")
+
+
+class VerifyTextRequest(BaseModel):
+    text: str
+
+
+@app.get("/api/v1/datasets/active/sliced-analytics")
+def get_sliced_analytics(
+    preset: str = Query("all", description="all, last_30_days, q1, q2, q3, q4, custom"),
+    grain: str = Query("monthly", description="daily, weekly, monthly"),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+):
+    if not ACTIVE_PIPELINE:
+        raise HTTPException(status_code=503, detail="Analytics pipeline initializing")
+
+    df = ACTIVE_PIPELINE.cleaned_df
+    t_start = time.perf_counter()
+
+    date_col = "purchase_date" if "purchase_date" in df.columns else ("order_date" if "order_date" in df.columns else None)
+    where_parts = []
+
+    if date_col and preset != "all":
+        if preset == "last_30_days":
+            where_parts.append(f"CAST({date_col} AS DATE) >= (SELECT MAX(CAST({date_col} AS DATE)) - INTERVAL 30 DAY FROM transactions)")
+        elif preset == "q1":
+            where_parts.append(f"MONTH(CAST({date_col} AS DATE)) IN (1, 2, 3)")
+        elif preset == "q2":
+            where_parts.append(f"MONTH(CAST({date_col} AS DATE)) IN (4, 5, 6)")
+        elif preset == "q3":
+            where_parts.append(f"MONTH(CAST({date_col} AS DATE)) IN (7, 8, 9)")
+        elif preset == "q4":
+            where_parts.append(f"MONTH(CAST({date_col} AS DATE)) IN (10, 11, 12)")
+        elif preset == "custom":
+            if start_date:
+                where_parts.append(f"CAST({date_col} AS DATE) >= CAST('{start_date}' AS DATE)")
+            if end_date:
+                where_parts.append(f"CAST({date_col} AS DATE) <= CAST('{end_date}' AS DATE)")
+
+    where_clause = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+
+    # 1. Aggregated KPIs
+    kpi_sql = f"""
+    SELECT 
+        COALESCE(ROUND(SUM(total_amount), 2), 0.0) AS total_revenue,
+        COUNT(DISTINCT order_id) AS total_orders,
+        COUNT(DISTINCT customer_id) AS total_customers,
+        COALESCE(ROUND(SUM(total_amount) / NULLIF(COUNT(DISTINCT order_id), 0), 2), 0.0) AS average_order_value,
+        COUNT(*) AS total_rows
+    FROM transactions
+    {where_clause}
+    """
+    kpi_res = ACTIVE_PIPELINE.execute_sql(kpi_sql)
+    kpis = dict(zip(kpi_res.columns, kpi_res.rows[0])) if kpi_res.rows else {
+        "total_revenue": 0.0, "total_orders": 0, "total_customers": 0, "average_order_value": 0.0, "total_rows": 0
+    }
+
+    # 2. Time-series Trend
+    if grain == "daily":
+        period_expr = f"strftime('%Y-%m-%d', CAST({date_col} AS DATE))"
+    elif grain == "weekly":
+        period_expr = f"strftime('%Y-W%W', CAST({date_col} AS DATE))"
+    else:
+        period_expr = f"strftime('%Y-%m', CAST({date_col} AS DATE))"
+
+    trend_sql = f"""
+    SELECT 
+        {period_expr} AS period,
+        ROUND(SUM(total_amount), 2) AS revenue,
+        COUNT(DISTINCT order_id) AS orders
+    FROM transactions
+    {where_clause}
+    GROUP BY 1
+    ORDER BY 1 ASC
+    """
+    trend_res = ACTIVE_PIPELINE.execute_sql(trend_sql)
+    trend_data = [dict(zip(trend_res.columns, r)) for r in trend_res.rows]
+
+    # 3. Category Breakdown
+    cat_sql = f"""
+    SELECT 
+        category,
+        ROUND(SUM(total_amount), 2) AS revenue,
+        COUNT(DISTINCT order_id) AS orders,
+        ROUND(SUM(total_amount) * 100.0 / NULLIF((SELECT SUM(total_amount) FROM transactions {where_clause}), 0), 1) AS pct
+    FROM transactions
+    {where_clause}
+    GROUP BY 1
+    ORDER BY revenue DESC
+    """
+    cat_res = ACTIVE_PIPELINE.execute_sql(cat_sql)
+    cat_data = [dict(zip(cat_res.columns, r)) for r in cat_res.rows]
+
+    elapsed_ms = round((time.perf_counter() - t_start) * 1000, 2)
+
+    return {
+        "preset": preset,
+        "grain": grain,
+        "execution_time_ms": elapsed_ms,
+        "sliced_rows": int(kpis.get("total_rows", 0)),
+        "kpis": kpis,
+        "trend": trend_data,
+        "categories": cat_data,
+        "where_clause": where_clause,
+    }
+
+
+@app.get("/api/v1/datasets/active/cohort-drilldown")
+def get_cohort_drilldown(cohort: str = Query("all", description="High Value, Regular, Occasional, At Risk, all")):
+    if not ACTIVE_PIPELINE:
+        raise HTTPException(status_code=503, detail="Analytics pipeline initializing")
+
+    rfm_res = ACTIVE_PIPELINE.rfm_result
+    if not rfm_res or not rfm_res.customer_scores:
+        return {"cohort": cohort, "total_matched": 0, "displayed_count": 0, "customers": []}
+
+    all_custs = rfm_res.customer_scores
+    if cohort.lower() != "all":
+        filtered = [c for c in all_custs if c.get("segment", "").lower() == cohort.lower()]
+    else:
+        filtered = all_custs
+
+    sample = filtered[:100]
+
+    return {
+        "cohort": cohort,
+        "total_matched": len(filtered),
+        "displayed_count": len(sample),
+        "customers": sample,
+        "segments_summary": [s.model_dump() for s in rfm_res.segments],
+    }
+
+
+@app.post("/api/v1/insights/verify-text")
+def verify_text(req: VerifyTextRequest):
+    if not ACTIVE_PIPELINE:
+        raise HTTPException(status_code=503, detail="Analytics pipeline initializing")
+    report = NumberGuard.verify_text(req.text, ACTIVE_PIPELINE)
+    return report.model_dump()
+
+
+@app.get("/api/v1/insights/guarded")
+def get_guarded_insights():
+    if not ACTIVE_PIPELINE:
+        raise HTTPException(status_code=503, detail="Analytics pipeline initializing")
+
+    canonical_pool = NumberGuard.extract_canonical_pool(ACTIVE_PIPELINE)
+    guarded = []
+    for ins in ACTIVE_PIPELINE.insights:
+        rep = NumberGuard.verify_text(ins.finding, ACTIVE_PIPELINE, canonical_pool)
+        item = ins.model_dump()
+        item["guard_report"] = rep.model_dump()
+        item["is_verified"] = rep.is_fully_verified
+        item["dataset_sha256"] = ACTIVE_PIPELINE.cleaning_result.cleaned_sha256
+        guarded.append(item)
+    return guarded
 
 
 @app.get("/api/v1/datasets/active/star-schema")

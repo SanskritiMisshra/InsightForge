@@ -122,6 +122,7 @@ class RFMAnalysisResult(BaseModel):
     segments: List[RFMSegmentSummary]
     grid_5x5: List[List[Dict[str, Any]]]
     rules_disclaimer: str
+    customer_scores: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class ProductMetric(BaseModel):
