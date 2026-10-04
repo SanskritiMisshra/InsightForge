@@ -9,17 +9,28 @@ import os
 import io
 import time
 from typing import Optional, Dict, Any
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request, Response, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, Response, PlainTextResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from packages.analytics_engine import AnalyticsPipeline, NumberGuard
 from packages.analytics_engine.pipeline import AnalyticsPipelineResult
 from packages.analytics_engine.report_generator import ExecutiveReportGenerator
 from packages.analytics_engine.powerbi_packager import PowerBIPackager
-from packages.storage import init_db, DatabaseRepository, MetricPersister, get_db_connection
+from packages.storage import (
+    init_db,
+    DatabaseRepository,
+    MetricPersister,
+    get_db_connection,
+    init_auth_tables,
+    authenticate_user,
+    register_user,
+    get_user_from_token,
+    revoke_session,
+    revoke_all_sessions,
+)
 
 app = FastAPI(
     title="InsightForge Analytics Platform API",
@@ -44,7 +55,8 @@ ACTIVE_PIPELINE: Optional[AnalyticsPipelineResult] = None
 def startup_event():
     global ACTIVE_PIPELINE
     init_db()
-    print("[InsightForge] Multi-tenant SQLite database initialized in data/insightforge.db")
+    init_auth_tables()
+    print("[InsightForge] Multi-tenant SQLite database & auth tables initialized in data/insightforge.db")
     print("[InsightForge] Initializing canonical benchmark retail dataset...")
     ACTIVE_PIPELINE = AnalyticsPipeline.run_benchmark(n_rows=10000)
     print(f"[InsightForge] Benchmark initialized: {ACTIVE_PIPELINE.metadata.row_count} rows, Quality: {ACTIVE_PIPELINE.quality_profile.overall_score}/100, Cleaned SHA: {ACTIVE_PIPELINE.cleaning_result.cleaned_sha256[:12]}...")
@@ -57,6 +69,138 @@ def startup_event():
 
 class SQLRequest(BaseModel):
     query: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    org_name: Optional[str] = None
+
+
+def resolve_auth_user(request: Request) -> Optional[Dict[str, Any]]:
+    """Extracts session token from Authorization header or cookie and resolves tenant context."""
+    token = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+    if not token:
+        token = request.cookies.get("session_token")
+    if not token:
+        token = request.query_params.get("token")
+    if token:
+        return get_user_from_token(token)
+    return None
+
+
+# ==========================================
+# Authentication & Tenant Security Endpoints
+# ==========================================
+
+@app.post("/api/v1/auth/login")
+def api_auth_login(req: LoginRequest, request: Request, response: Response):
+    """Authenticates email/password, issues session token, and sets httpOnly cookie."""
+    try:
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("User-Agent")
+        result = authenticate_user(req.email, req.password, client_ip, user_agent)
+        response.set_cookie(
+            key="session_token",
+            value=result["session"]["token"],
+            max_age=604800,
+            httponly=True,
+            samesite="lax",
+            secure=False,
+        )
+        return result
+    except ValueError as e:
+        err_msg = str(e)
+        if "AUTH_INVALID_CREDENTIALS" in err_msg:
+            raise HTTPException(status_code=401, detail="Invalid email or password.")
+        elif "AUTH_ACCOUNT_DISABLED" in err_msg:
+            raise HTTPException(status_code=403, detail="Account has been suspended.")
+        raise HTTPException(status_code=400, detail=err_msg)
+
+
+@app.post("/api/v1/auth/register", status_code=201)
+def api_auth_register(req: RegisterRequest, request: Request, response: Response):
+    """Registers a new tenant organization, workspace, admin user, and initial project."""
+    try:
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("User-Agent")
+        result = register_user(req.name, req.email, req.password, req.org_name, client_ip, user_agent)
+        response.set_cookie(
+            key="session_token",
+            value=result["session"]["token"],
+            max_age=604800,
+            httponly=True,
+            samesite="lax",
+            secure=False,
+        )
+        return result
+    except ValueError as e:
+        err_msg = str(e)
+        if "AUTH_EMAIL_TAKEN" in err_msg:
+            raise HTTPException(status_code=409, detail="An account with this email already exists.")
+        elif "AUTH_WEAK_PASSWORD" in err_msg:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters.")
+        raise HTTPException(status_code=400, detail=err_msg)
+
+
+@app.get("/api/v1/auth/me")
+def api_auth_me(request: Request):
+    """Returns currently authenticated user profile and tenant context."""
+    user_ctx = resolve_auth_user(request)
+    if user_ctx:
+        return {"authenticated": True, **user_ctx}
+    # Return default development analyst context if unauthenticated
+    return {
+        "authenticated": False,
+        "user": {
+            "id": "usr-0192a001-0000-7000-8000-000000000003",
+            "email": "analyst@insightforge.ai",
+            "full_name": "Sanskar",
+            "role": "ANALYST",
+        },
+        "organization": {
+            "id": "org-0192a001-0000-7000-8000-000000000001",
+            "name": "InsightForge Enterprise",
+            "slug": "insightforge-enterprise",
+        },
+        "workspace": {
+            "id": "ws-0192a001-0000-7000-8000-000000000002",
+            "name": "Retail Analytics Workspace",
+        },
+        "csrf_token": "csrf-dev-analyst-session",
+    }
+
+
+@app.post("/api/v1/auth/logout")
+def api_auth_logout(request: Request, response: Response):
+    """Invalidates active session token and clears cookie."""
+    token = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+    if not token:
+        token = request.cookies.get("session_token")
+    if token:
+        revoke_session(token)
+    response.delete_cookie("session_token")
+    return {"status": "logged_out", "message": "Session invalidated successfully"}
+
+
+@app.get("/api/v1/auth/csrf")
+def api_auth_csrf(request: Request):
+    """Returns CSRF token for the active session."""
+    user_ctx = resolve_auth_user(request)
+    csrf_token = user_ctx["csrf_token"] if user_ctx else "csrf-dev-analyst-session"
+    return {"csrf_token": csrf_token}
 
 
 # ==========================================

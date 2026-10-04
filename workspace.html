@@ -276,17 +276,17 @@
     <!-- User Profile Footer -->
     <div class="p-3 border-t border-border-subtle bg-bg-surface/30 flex items-center justify-between">
       <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-7 h-7 rounded-full bg-border-default flex items-center justify-center font-medium text-xs text-text-primary">
+        <div id="user-avatar" class="w-7 h-7 rounded-full bg-border-default flex items-center justify-center font-medium text-xs text-text-primary">
           SK
         </div>
         <div class="min-w-0 truncate">
-          <div class="text-xs font-medium text-text-primary truncate">Sanskar</div>
-          <div class="text-[11px] text-text-tertiary truncate">analyst@insightforge.ai</div>
+          <div id="user-name" class="text-xs font-medium text-text-primary truncate">Sanskar</div>
+          <div id="user-email" class="text-[11px] text-text-tertiary truncate">analyst@insightforge.ai</div>
         </div>
       </div>
-      <a href="index.html" title="Sign out" class="text-text-tertiary hover:text-text-primary p-1.5 rounded hover:bg-bg-raised transition-colors">
+      <button onclick="handleLogout()" title="Sign out" class="text-text-tertiary hover:text-text-primary p-1.5 rounded hover:bg-bg-raised transition-colors cursor-pointer">
         <i data-lucide="log-out" class="w-4 h-4"></i>
-      </a>
+      </button>
     </div>
   </aside>
 
@@ -3265,8 +3265,47 @@ ORDER BY purchase_date DESC;`;
       loadProjectsList();
     }
 
+    async function initUserProfile() {
+      try {
+        const token = localStorage.getItem('insightforge_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch('/api/v1/auth/me', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.user) {
+            const u = data.user;
+            const nameEl = document.getElementById('user-name');
+            const emailEl = document.getElementById('user-email');
+            const avatarEl = document.getElementById('user-avatar');
+            if (nameEl) nameEl.textContent = u.full_name || 'Sanskar';
+            if (emailEl) emailEl.textContent = u.email || 'analyst@insightforge.ai';
+            if (avatarEl) {
+              const initials = (u.full_name || 'Sanskar').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+              avatarEl.textContent = initials || 'SK';
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Session profile check:', err);
+      }
+    }
+
+    async function handleLogout() {
+      try {
+        const token = localStorage.getItem('insightforge_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        await fetch('/api/v1/auth/logout', { method: 'POST', headers });
+      } catch (e) {}
+      localStorage.removeItem('insightforge_token');
+      localStorage.removeItem('insightforge_user');
+      localStorage.removeItem('insightforge_org');
+      localStorage.removeItem('insightforge_workspace');
+      window.location.href = 'auth.html';
+    }
+
     // Initialize all tables, charts, and listeners on DOM Ready
     window.addEventListener('DOMContentLoaded', () => {
+      initUserProfile();
       seedPreviewTable();
       seedSqlResults();
       seedInsights();

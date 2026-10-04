@@ -3,25 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Create an account - InsightForge</title>
+  <title>Sign In & Authentication — InsightForge</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
     body {
       font-family: 'Inter', sans-serif;
       background-color: #050505;
       color: white;
     }
     
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
     /* Input Animations */
     .input-wrapper input:focus + button { opacity: 1; }
     
     /* Shader mockup background (Pure CSS fallback) */
     .shader-bg {
-      background: radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 40%),
-                  radial-gradient(circle at bottom left, rgba(255,255,255,0.05) 0%, transparent 40%);
-      background-color: #050505;
+      background: radial-gradient(circle at top right, rgba(232,163,61,0.08) 0%, transparent 50%),
+                  radial-gradient(circle at bottom left, rgba(255,255,255,0.04) 0%, transparent 50%);
+      background-color: #07090c;
     }
     
     /* Custom Checkbox */
@@ -37,8 +41,8 @@
       cursor: pointer;
     }
     .custom-checkbox:checked {
-      background-color: white;
-      border-color: white;
+      background-color: #e8a33d;
+      border-color: #e8a33d;
     }
     .custom-checkbox:checked::after {
       content: '';
@@ -58,7 +62,7 @@
       theme: {
         extend: {
           colors: {
-            brand: '#ff7a1a'
+            brand: '#e8a33d'
           }
         }
       }
@@ -69,153 +73,214 @@
 
   <section class="grid min-h-[calc(100vh-1.5rem)] gap-6 lg:grid-cols-[0.94fr_1.06fr]">
     
-    <!-- Left Side - SignUp Form -->
-    <div class="flex min-h-[760px] items-center justify-center rounded-md border border-white/5 bg-[#0a0a0c] px-6 py-12 lg:min-h-0 lg:px-14 lg:py-20 xl:px-20">
+    <!-- Left Side - Form Container -->
+    <div class="flex min-h-[760px] items-center justify-center rounded-xl border border-white/5 bg-[#0a0c10] px-6 py-10 lg:min-h-0 lg:px-14 lg:py-16 xl:px-20">
       <div class="mx-auto w-full max-w-[460px]">
         <div>
-          <a href="index.html" class="inline-flex items-center text-xs text-white/50 hover:text-white mb-8 transition-colors">
-            <i data-lucide="arrow-left" class="w-3 h-3 mr-1"></i> Back to home
+          <a href="index.html" class="inline-flex items-center text-xs text-white/50 hover:text-white mb-6 transition-colors">
+            <i data-lucide="arrow-left" class="w-3 h-3 mr-1.5"></i> Back to Home
           </a>
-          <h1 class="text-3xl font-medium tracking-tight sm:text-4xl text-white">
-            Create an account
+          
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-6 h-6 rounded bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-xs">IF</div>
+            <span class="text-xs font-mono uppercase tracking-wider text-amber-400/90 font-semibold">InsightForge Security</span>
+          </div>
+
+          <h1 id="form-heading" class="text-3xl font-semibold tracking-tight sm:text-4xl text-white">
+            Sign In to Workspace
           </h1>
+          <p id="form-subheading" class="text-sm text-white/60 mt-1.5">
+            Access your multi-tenant analytics engine and verified dashboards.
+          </p>
         </div>
+
+        <!-- Mode Switcher Tabs -->
+        <div class="mt-6 flex rounded-lg bg-white/5 p-1 border border-white/10">
+          <button type="button" id="tab-signin" onclick="setAuthMode('signin')" class="flex-1 py-2 text-xs font-medium rounded-md transition-all bg-white/10 text-white shadow-sm">
+            Sign In
+          </button>
+          <button type="button" id="tab-register" onclick="setAuthMode('register')" class="flex-1 py-2 text-xs font-medium rounded-md transition-all text-white/60 hover:text-white">
+            Create Account
+          </button>
+        </div>
+
+        <!-- Alert Banner -->
+        <div id="auth-alert" class="mt-4 hidden p-3 rounded-lg text-xs border"></div>
 
         <!-- Social Signup Buttons -->
-        <div class="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-4">
-          <button type="button" class="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10">
-            <svg width="15" height="15" viewBox="0 0 24 24" class="shrink-0"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23Z" fill="#34A853"/><path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84Z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" fill="#EB4335"/></svg>
-            <span class="whitespace-nowrap">Sign up with Google</span>
+        <div class="mt-6 grid gap-3 sm:grid-cols-2 sm:gap-3">
+          <button type="button" onclick="quickFillAnalyst()" class="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-500/20">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span class="whitespace-nowrap">Fill Demo Analyst</span>
           </button>
-          <button type="button" class="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="shrink-0"><path d="M17.05 12.54c-.03-3.02 2.47-4.47 2.58-4.54-1.41-2.06-3.6-2.34-4.38-2.37-1.86-.19-3.64 1.1-4.58 1.1-.95 0-2.42-1.07-3.98-1.04-2.05.03-3.94 1.19-4.99 3.02-2.13 3.69-.54 9.16 1.53 12.15 1.01 1.46 2.22 3.1 3.81 3.04 1.53-.06 2.11-.99 3.96-.99s2.37.99 3.99.96c1.65-.03 2.69-1.49 3.69-2.96 1.16-1.69 1.64-3.33 1.66-3.41-.04-.02-3.2-1.23-3.24-4.87ZM14.03 3.66c.84-1.02 1.41-2.43 1.25-3.84-1.21.05-2.68.81-3.55 1.83-.78.9-1.46 2.34-1.28 3.72 1.35.1 2.73-.69 3.58-1.71Z"/></svg>
-            <span class="whitespace-nowrap">Sign up with Apple</span>
+          <button type="button" onclick="alert('Google OAuth PKCE is configured for production deployments.')" class="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-medium text-white transition-colors hover:bg-white/10">
+            <svg width="14" height="14" viewBox="0 0 24 24" class="shrink-0"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23Z" fill="#34A853"/><path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84Z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" fill="#EB4335"/></svg>
+            <span class="whitespace-nowrap">Sign In with Google</span>
           </button>
         </div>
 
-        <div class="my-6 flex items-center gap-4 text-xs font-medium text-white/30">
+        <div class="my-5 flex items-center gap-4 text-xs font-medium text-white/30">
           <div class="h-px flex-1 bg-white/10"></div>
-          or
+          <span class="font-mono text-[10px] tracking-wider uppercase">or email credentials</span>
           <div class="h-px flex-1 bg-white/10"></div>
         </div>
 
-        <form class="space-y-4" onsubmit="event.preventDefault(); window.location.href='workspace.html';">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <!-- First Name -->
-            <div class="space-y-1.5 text-left w-full input-wrapper">
-              <label class="text-xs font-semibold text-white/60">First name</label>
-              <div class="relative flex h-11 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-white/30 transition-colors">
-                <input type="text" placeholder="John" value="Sanskar" class="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30" required>
+        <!-- Real Authentication Form -->
+        <form id="auth-form" class="space-y-3.5" onsubmit="handleAuthSubmit(event)">
+          
+          <!-- Registration extra fields (Name & Org) -->
+          <div id="register-fields" class="hidden space-y-3.5">
+            <div class="space-y-1 text-left w-full input-wrapper">
+              <label class="text-xs font-semibold text-white/70">Full Name</label>
+              <div class="relative flex h-10 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-amber-500/50 transition-colors">
+                <input type="text" id="reg-name" placeholder="Sanskar" class="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30">
               </div>
             </div>
-            <!-- Last Name -->
-            <div class="space-y-1.5 text-left w-full input-wrapper">
-              <label class="text-xs font-semibold text-white/60">Last name</label>
-              <div class="relative flex h-11 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-white/30 transition-colors">
-                <input type="text" placeholder="Doe" value="Analyst" class="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30" required>
+            
+            <div class="space-y-1 text-left w-full input-wrapper">
+              <label class="text-xs font-semibold text-white/70">Organization / Company</label>
+              <div class="relative flex h-10 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-amber-500/50 transition-colors">
+                <input type="text" id="reg-org" placeholder="Acme Analytics Inc." class="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30">
               </div>
             </div>
           </div>
 
           <!-- Email -->
-          <div class="space-y-1.5 text-left w-full input-wrapper">
-            <label class="text-xs font-semibold text-white/60">Email</label>
-            <div class="relative flex h-11 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-white/30 transition-colors">
-              <input type="email" placeholder="email@example.com" value="analyst@insightforge.ai" class="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30" required>
+          <div class="space-y-1 text-left w-full input-wrapper">
+            <label class="text-xs font-semibold text-white/70">Work Email</label>
+            <div class="relative flex h-10 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-amber-500/50 transition-colors">
+              <input type="email" id="auth-email" placeholder="analyst@insightforge.ai" value="analyst@insightforge.ai" class="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30" required>
             </div>
           </div>
 
           <!-- Password -->
-          <div class="space-y-1.5 text-left w-full input-wrapper">
-            <label class="text-xs font-semibold text-white/60">Password</label>
-            <div class="relative flex h-11 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-white/30 transition-colors">
-              <input type="password" id="password" placeholder="Enter password" value="PrecisionAnalytics2026!" class="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30" required>
-              <button type="button" onclick="togglePassword()" class="absolute right-3.5 text-white/40 hover:text-white cursor-pointer transition-colors" tabindex="-1">
+          <div class="space-y-1 text-left w-full input-wrapper">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-white/70">Password</label>
+              <span id="pw-hint" class="text-[11px] text-white/40 font-mono">PBKDF2-HMAC-SHA256</span>
+            </div>
+            <div class="relative flex h-10 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-amber-500/50 transition-colors">
+              <input type="password" id="auth-password" placeholder="••••••••••••" value="Analyst@2026!" class="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30" required>
+              <button type="button" onclick="togglePassword()" class="absolute right-3 text-white/40 hover:text-white cursor-pointer transition-colors" tabindex="-1">
                 <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
               </button>
             </div>
           </div>
 
           <!-- Checkboxes -->
-          <div class="space-y-3 pt-2 text-xs leading-5 text-white/40 sm:text-[13px]">
-            <label class="flex items-start gap-3 cursor-pointer group">
-              <span class="relative mt-1 shrink-0">
-                <input type="checkbox" class="custom-checkbox">
-              </span>
-              <span class="group-hover:text-white/70 transition-colors">I don't want to receive emails about new feature updates and best practices.</span>
-            </label>
-            
-            <label class="flex items-start gap-3 cursor-pointer group">
-              <span class="relative mt-1 shrink-0">
-                <input type="checkbox" checked class="custom-checkbox">
-              </span>
-              <span class="group-hover:text-white/70 transition-colors">
-                By creating an account, you agree to our 
-                <a href="#" class="font-medium text-white/55 underline underline-offset-2 hover:text-white">Terms of Service</a> 
-                and 
-                <a href="#" class="font-medium text-white/55 underline underline-offset-2 hover:text-white">Privacy Policy</a>
-              </span>
+          <div class="space-y-2 pt-1 text-xs text-white/50">
+            <label class="flex items-center gap-2.5 cursor-pointer group">
+              <input type="checkbox" checked class="custom-checkbox">
+              <span class="group-hover:text-white/70 transition-colors">Keep me signed in on this workstation (7 days)</span>
             </label>
           </div>
 
-          <button type="submit" class="mt-8 flex h-11 w-full items-center justify-center rounded-lg border border-white/40 bg-white text-sm font-medium text-black transition-all hover:bg-white/85 hover:scale-[0.99] active:scale-[0.97]">
-            Sign In / Create Account
+          <button type="submit" id="submit-btn" class="mt-6 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-500 text-sm font-semibold text-black transition-all hover:bg-amber-400 active:scale-[0.99] shadow-[0_0_20px_rgba(232,163,61,0.25)]">
+            <span id="btn-text">Sign In to Analytics Workspace</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
-          
-          <a href="workspace.html" class="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 text-sm font-medium text-amber-400 transition-all hover:bg-amber-500/20">
-            <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
-            <span>Enter Workspace Directly (Demo Analyst)</span>
-          </a>
         </form>
+
+        <div class="mt-6 p-3 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-between text-[11px] text-white/40">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-500"></i>
+            <span>NIST PBKDF2 100K Rounds</span>
+          </div>
+          <div class="font-mono text-[10px] text-white/30">Port 8080 · SQLite Drive D</div>
+        </div>
+
       </div>
     </div>
 
-    <!-- Right Side - Marketing Testimonial and Mockup -->
-    <div class="relative flex min-h-[720px] flex-col overflow-hidden rounded-md bg-gradient-to-b from-black to-[#050505] p-8 text-white sm:p-12 lg:min-h-0 lg:p-16 border border-white/5 shader-bg">
-      
-      <div class="relative z-10 h-full w-full">
+    <!-- Right Side - Visual Testimonial & Machine Preview -->
+    <div class="relative flex min-h-[720px] flex-col overflow-hidden rounded-xl bg-gradient-to-b from-[#0c0f14] to-[#050608] p-8 text-white sm:p-12 lg:min-h-0 lg:p-16 border border-white/5 shader-bg">
+      <div class="relative z-10 h-full w-full flex flex-col justify-between">
+        
         <!-- Testimonial -->
-        <div class="max-w-[460px] lg:pt-12 transform opacity-0 translate-y-4 blur-sm transition-all duration-700 ease-out" id="anim-1">
-          <div class="flex items-center gap-4">
-            <img src="https://res.cloudinary.com/harshitproject/image/upload/v1746774430/member-five.png" alt="Charlotte" class="w-10 h-10 shrink-0 rounded-full border border-white/20 object-cover">
-            <div>
-              <div class="font-semibold leading-tight text-white">Charlotte</div>
-              <div class="mt-0.5 text-xs text-white/60">Data Engineer</div>
-            </div>
+        <div class="max-w-[480px] lg:pt-8" id="anim-1">
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono mb-4">
+            <i data-lucide="check-circle" class="w-3 h-3"></i>
+            <span>Zero Hallucinated Numbers Invariant</span>
           </div>
-          <blockquote class="mt-7 text-2xl font-light leading-tight tracking-[-0.035em] text-white/90 sm:text-3xl lg:text-[34px]">
-            “InsightForge automated in minutes what used to take our entire data team weeks to refine.”
+          <blockquote class="text-2xl font-light leading-snug tracking-tight text-white/90 sm:text-3xl">
+            “InsightForge mathematically verifies every currency figure, percentage, and metric against the Canonical Metric Registry before narrative presentation.”
           </blockquote>
-        </div>
-
-        <!-- Dashboard Mockup -->
-        <div class="mt-10 w-full translate-y-[24%] overflow-hidden rounded-2xl border border-white/15 bg-black/70 p-2 shadow-[0_30px_90px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:translate-y-[22%] lg:absolute lg:left-[12%] lg:-bottom-28 lg:mt-0 lg:w-[105%] lg:max-w-none lg:origin-bottom-left lg:translate-y-0 lg:-rotate-3 xl:left-[14%] xl:-bottom-[150px] xl:w-[108%] 2xl:-bottom-[170px] 2xl:w-[112%] transform opacity-0 translate-y-12 blur-sm transition-all duration-1000 delay-200 ease-out" id="anim-2">
-          <div class="overflow-hidden rounded-xl border border-white/10 bg-black">
-            <div class="flex items-center gap-1.5 border-b border-white/10 bg-black/40 px-4 py-3 select-none">
-              <div class="w-2 h-2 rounded-full bg-white/35"></div>
-              <div class="w-2 h-2 rounded-full bg-white/25"></div>
-              <div class="w-2 h-2 rounded-full bg-white/15"></div>
-              <span class="ml-4 text-[9px] font-mono tracking-wider text-white/40">insightforge.ai/dashboard</span>
+          <div class="flex items-center gap-3 mt-6">
+            <div class="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-bold text-amber-400 text-xs">DE</div>
+            <div>
+              <div class="font-medium text-sm text-white">Chief Data Architect</div>
+              <div class="text-xs text-white/50">Omnichannel Enterprise BI Team</div>
             </div>
-            <img src="https://res.cloudinary.com/harshitproject/image/upload/v1774017120/hero-light.png" alt="Dashboard Mockup" class="h-auto w-full object-cover object-top opacity-95">
           </div>
         </div>
-      </div>
 
+        <!-- Visual Architecture Card -->
+        <div class="mt-8 rounded-xl border border-white/10 bg-[#090b0e]/80 p-5 backdrop-blur-xl" id="anim-2">
+          <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
+            <div class="flex items-center gap-2 text-xs font-mono text-white/70">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>insightforge.ai/api/v1/auth/me</span>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/60">SESSION ACTIVE</span>
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+              <div class="text-[10px] text-white/40 uppercase font-mono">Tenancy</div>
+              <div class="text-xs font-semibold text-white mt-0.5">Multi-Tenant</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+              <div class="text-[10px] text-white/40 uppercase font-mono">Quality Score</div>
+              <div class="text-xs font-semibold text-emerald-400 mt-0.5">99 / 100</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-white/[0.02] border border-white/5">
+              <div class="text-[10px] text-white/40 uppercase font-mono">DuckDB AST</div>
+              <div class="text-xs font-semibold text-amber-400 mt-0.5">Read-Only Guard</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </section>
 
   <script>
-    // Initialize icons
     lucide.createIcons();
 
-    // Password visibility toggle
+    let currentMode = 'signin';
     let isPasswordHidden = true;
+
+    function setAuthMode(mode) {
+      currentMode = mode;
+      const tabSignIn = document.getElementById('tab-signin');
+      const tabRegister = document.getElementById('tab-register');
+      const regFields = document.getElementById('register-fields');
+      const formHeading = document.getElementById('form-heading');
+      const formSubheading = document.getElementById('form-subheading');
+      const btnText = document.getElementById('btn-text');
+      const alertBox = document.getElementById('auth-alert');
+      alertBox.classList.add('hidden');
+
+      if (mode === 'signin') {
+        tabSignIn.className = 'flex-1 py-2 text-xs font-medium rounded-md transition-all bg-white/10 text-white shadow-sm';
+        tabRegister.className = 'flex-1 py-2 text-xs font-medium rounded-md transition-all text-white/60 hover:text-white';
+        regFields.classList.add('hidden');
+        formHeading.textContent = 'Sign In to Workspace';
+        formSubheading.textContent = 'Access your multi-tenant analytics engine and verified dashboards.';
+        btnText.textContent = 'Sign In to Analytics Workspace';
+      } else {
+        tabRegister.className = 'flex-1 py-2 text-xs font-medium rounded-md transition-all bg-white/10 text-white shadow-sm';
+        tabSignIn.className = 'flex-1 py-2 text-xs font-medium rounded-md transition-all text-white/60 hover:text-white';
+        regFields.classList.remove('hidden');
+        formHeading.textContent = 'Create Enterprise Account';
+        formSubheading.textContent = 'Set up a new organization, workspace, and isolated project.';
+        btnText.textContent = 'Create Account & Workspace';
+      }
+    }
+
     function togglePassword() {
-      const input = document.getElementById('password');
+      const input = document.getElementById('auth-password');
       const icon = document.getElementById('eye-icon');
       isPasswordHidden = !isPasswordHidden;
-      
       if (isPasswordHidden) {
         input.type = 'password';
         icon.setAttribute('data-lucide', 'eye');
@@ -226,31 +291,84 @@
       lucide.createIcons();
     }
 
-    // Trigger entrance animations
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        const anim1 = document.getElementById('anim-1');
-        if (anim1) {
-          anim1.style.opacity = '1';
-          anim1.style.transform = 'translateY(0)';
-          anim1.style.filter = 'blur(0)';
-        }
-      }, 100);
+    function quickFillAnalyst() {
+      setAuthMode('signin');
+      document.getElementById('auth-email').value = 'analyst@insightforge.ai';
+      document.getElementById('auth-password').value = 'Analyst@2026!';
+      const alertBox = document.getElementById('auth-alert');
+      alertBox.className = 'mt-4 p-3 rounded-lg text-xs border bg-amber-500/10 border-amber-500/30 text-amber-300 flex items-center gap-2';
+      alertBox.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> Seeded analyst credentials loaded. Click Sign In to authenticate.';
+      alertBox.classList.remove('hidden');
+      lucide.createIcons();
+    }
 
-      setTimeout(() => {
-        const anim2 = document.getElementById('anim-2');
-        if (anim2) {
-          anim2.style.opacity = '1';
-          anim2.style.transform = 'translateY(0) rotate(-3deg)'; // Keep the large screen rotation
-          anim2.style.filter = 'blur(0)';
-          
-          // Responsive reset for mobile rotation
-          if(window.innerWidth < 1024) {
-            anim2.style.transform = 'translateY(0)';
-          }
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById('auth-alert');
+      const submitBtn = document.getElementById('submit-btn');
+      const btnText = document.getElementById('btn-text');
+      
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+
+      submitBtn.disabled = true;
+      btnText.textContent = 'Authenticating...';
+
+      try {
+        let endpoint = '/api/v1/auth/login';
+        let payload = { email, password };
+
+        if (currentMode === 'register') {
+          endpoint = '/api/v1/auth/register';
+          const name = document.getElementById('reg-name').value.trim() || 'New User';
+          const org_name = document.getElementById('reg-org').value.trim() || 'InsightForge Org';
+          payload = { name, email, password, org_name };
         }
-      }, 300);
-    });
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || 'Authentication failed. Please check your credentials.');
+        }
+
+        // Store session tokens and user context
+        if (data.session && data.session.token) {
+          localStorage.setItem('insightforge_token', data.session.token);
+        }
+        if (data.user) {
+          localStorage.setItem('insightforge_user', JSON.stringify(data.user));
+        }
+        if (data.organization) {
+          localStorage.setItem('insightforge_org', JSON.stringify(data.organization));
+        }
+        if (data.workspace) {
+          localStorage.setItem('insightforge_workspace', JSON.stringify(data.workspace));
+        }
+
+        alertBox.className = 'mt-4 p-3 rounded-lg text-xs border bg-emerald-500/10 border-emerald-500/30 text-emerald-300 flex items-center gap-2';
+        alertBox.innerHTML = '<i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Authentication verified. Opening analytics workspace...';
+        alertBox.classList.remove('hidden');
+        lucide.createIcons();
+
+        setTimeout(() => {
+          window.location.href = 'workspace.html';
+        }, 600);
+
+      } catch (err) {
+        alertBox.className = 'mt-4 p-3 rounded-lg text-xs border bg-rose-500/10 border-rose-500/30 text-rose-300 flex items-center gap-2';
+        alertBox.innerHTML = '<i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0"></i> ' + err.message;
+        alertBox.classList.remove('hidden');
+        lucide.createIcons();
+        submitBtn.disabled = false;
+        btnText.textContent = currentMode === 'signin' ? 'Sign In to Analytics Workspace' : 'Create Account & Workspace';
+      }
+    }
   </script>
 </body>
 </html>

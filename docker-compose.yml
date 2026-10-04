@@ -1,0 +1,37 @@
+# ==============================================================================
+# InsightForge — Production Docker Compose Orchestration
+# Maps strictly to Port 8080.
+# Volume-mounts SQLite multi-tenant database for zero-loss container updates.
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  insightforge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: insightforge_platform
+    ports:
+      - "8080:8080" # Invariant: Port 8080 is the authoritative port
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - ENVIRONMENT=production
+      - DB_PATH=/app/data/insightforge.db
+      - DUCKDB_MAX_MEMORY=4GB
+      - DUCKDB_THREADS=4
+      - LOG_LEVEL=INFO
+    volumes:
+      - insightforge_storage:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+
+volumes:
+  insightforge_storage:
+    driver: local
