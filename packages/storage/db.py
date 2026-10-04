@@ -203,12 +203,29 @@ def init_db():
             "INSERT INTO projects (id, workspace_id, name, domain, description, created_at) VALUES (?, ?, ?, ?, ?, ?)",
             (proj_id, ws_id, "Retail Omnichannel Analytics", "retail", "Automated BI pipeline for omnichannel retail transactions", now),
         )
+        cur.execute(
+            "INSERT INTO projects (id, workspace_id, name, domain, description, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (f"proj-{uuid.uuid4()}", ws_id, "E-Commerce Q3 Flash Sale", "ecommerce", "Performance analytics and basket velocity for holiday sales", now),
+        )
+        cur.execute(
+            "INSERT INTO projects (id, workspace_id, name, domain, description, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (f"proj-{uuid.uuid4()}", ws_id, "B2B Wholesale & Distribution", "wholesale", "Bulk order fulfillment, customer credit terms and logistics", now),
+        )
 
     conn.commit()
     conn.close()
 
 
 class DatabaseRepository:
+    @staticmethod
+    def list_projects() -> List[Dict[str, Any]]:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM projects ORDER BY created_at ASC")
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return rows
+
     @staticmethod
     def get_default_project() -> Dict[str, Any]:
         conn = get_db_connection()
@@ -217,6 +234,24 @@ class DatabaseRepository:
         row = cur.fetchone()
         conn.close()
         return dict(row) if row else {}
+
+    @staticmethod
+    def create_project(name: str, domain: str = "retail", description: str = "") -> Dict[str, Any]:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Get default workspace
+        cur.execute("SELECT id FROM workspaces LIMIT 1")
+        ws_row = cur.fetchone()
+        ws_id = ws_row["id"] if ws_row else "ws-default"
+        proj_id = f"proj-{uuid.uuid4()}"
+        now = datetime.utcnow().isoformat() + "Z"
+        cur.execute(
+            "INSERT INTO projects (id, workspace_id, name, domain, description, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (proj_id, ws_id, name, domain, description, now),
+        )
+        conn.commit()
+        conn.close()
+        return {"id": proj_id, "name": name, "domain": domain, "description": description, "created_at": now}
 
     @staticmethod
     def get_datasets_for_project(project_id: str) -> List[Dict[str, Any]]:

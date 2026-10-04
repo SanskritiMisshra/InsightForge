@@ -183,17 +183,20 @@
       </button>
     </div>
 
-    <!-- Active Project Chip -->
-    <div class="p-3 border-b border-border-subtle bg-bg-surface/50">
+    <!-- Active Project Chip & Switcher Trigger (Phase 8) -->
+    <div onclick="openProjectModal()" class="p-3 border-b border-border-subtle bg-bg-surface/50 hover:bg-bg-raised cursor-pointer transition-colors group">
       <div class="flex items-center justify-between text-overline text-text-tertiary mb-1">
         <span>ACTIVE PROJECT</span>
-        <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+        <div class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-text-tertiary group-hover:text-text-primary transition-colors"></i>
+        </div>
       </div>
       <div class="flex items-center gap-2">
         <i data-lucide="folder-kanban" class="w-4 h-4 text-accent-500 flex-shrink-0"></i>
-        <div class="truncate">
-          <div class="text-text-primary font-medium text-xs truncate">Retail Sales Analysis</div>
-          <div class="text-[11px] text-text-tertiary font-mono">v2 · 125.1k rows</div>
+        <div class="truncate flex-1">
+          <div id="active-project-name" class="text-text-primary font-semibold text-xs truncate">Retail Omnichannel Analytics</div>
+          <div id="active-project-meta" class="text-[11px] text-text-tertiary font-mono">v2 · Cleaned (10k rows)</div>
         </div>
       </div>
     </div>
@@ -805,24 +808,85 @@
             </div>
           </div>
 
-          <!-- Dataset Version Lineage (PRD §30 & §118) -->
-          <div class="mb-5">
-            <span class="text-overline text-text-tertiary block mb-2">DATASET VERSION LINEAGE</span>
-            <div class="flex items-center gap-3 text-xs">
-              <div class="p-3 bg-bg-raised rounded border border-border-default flex-1">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="font-mono font-medium text-text-primary">v1 · Original (Raw)</span>
-                  <span class="text-[10px] font-mono text-text-tertiary">🔒 Immutable</span>
-                </div>
-                <div class="text-[11px] text-text-tertiary">125,430 rows · 14 columns · 324 duplicates</div>
+          <!-- Dataset Version Lineage & Comparison Matrix (Phase 8) -->
+          <div class="mb-6 bg-bg-base border border-border-default rounded-md p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3 border-b border-border-subtle pb-2.5">
+              <div class="flex items-center gap-2">
+                <i data-lucide="git-compare" class="w-4 h-4 text-accent-500"></i>
+                <span class="text-xs font-semibold text-text-primary">Dataset Version Diff: v1 (Raw Immutable) vs v2 (Cleaned Active)</span>
               </div>
-              <i data-lucide="arrow-right" class="w-4 h-4 text-text-tertiary flex-shrink-0"></i>
-              <div class="p-3 bg-bg-raised rounded border border-accent-border bg-accent-500/5 flex-1">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="font-mono font-medium text-accent-500">v2 · Cleaned (Active)</span>
-                  <span class="text-[10px] font-mono text-success">✓ In Use</span>
+              <span id="version-quality-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-success/15 border border-success/30 text-success font-semibold">
+                Quality Score Improvement: +12 pts
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <!-- v1 Raw Ingested -->
+              <div class="p-3.5 bg-bg-surface rounded border border-border-default">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-mono font-semibold text-text-primary text-xs">v1 · Original (Raw Ingested)</span>
+                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-bg-raised text-text-tertiary border border-border-subtle">🔒 IMMUTABLE RAW</span>
                 </div>
-                <div class="text-[11px] text-text-secondary">125,106 rows · Deduplicated · Imputed & Parsed</div>
+                <div class="text-[11px] font-mono text-text-tertiary mb-3 flex items-center gap-1">
+                  <span>SHA-256:</span>
+                  <code id="v1-sha" class="text-text-secondary">673d57be85c3...</code>
+                </div>
+                <div class="space-y-1.5 text-xs font-mono">
+                  <div class="flex justify-between text-text-secondary">
+                    <span>Total Ingested Rows:</span>
+                    <span id="v1-rows" class="text-text-primary font-semibold">10,000</span>
+                  </div>
+                  <div class="flex justify-between text-text-secondary">
+                    <span>Quality Profile Score:</span>
+                    <span id="v1-quality" class="text-warning font-semibold">87 / 100</span>
+                  </div>
+                  <div class="flex justify-between text-text-secondary">
+                    <span>Exact Duplicate Rows:</span>
+                    <span id="v1-dupes" class="text-danger font-semibold">120 duplicates</span>
+                  </div>
+                  <div class="flex justify-between text-text-secondary">
+                    <span>Null / Missing Values:</span>
+                    <span id="v1-nulls" class="text-warning font-semibold">792 cells</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- v2 Cleaned Active -->
+              <div class="p-3.5 bg-bg-surface rounded border border-accent-border bg-accent-500/5">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-mono font-semibold text-accent-500 text-xs">v2 · Cleaned & Active (Production)</span>
+                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-success/15 border border-success/30 text-success font-semibold">✓ ACTIVE IN USE</span>
+                </div>
+                <div class="text-[11px] font-mono text-text-tertiary mb-3 flex items-center gap-1">
+                  <span>SHA-256:</span>
+                  <code id="v2-sha" class="text-accent-400">dacc36508846...</code>
+                </div>
+                <div class="space-y-1.5 text-xs font-mono">
+                  <div class="flex justify-between text-text-secondary">
+                    <span>Cleaned Total Rows:</span>
+                    <span id="v2-rows" class="text-text-primary font-semibold">9,880 (-1.2%)</span>
+                  </div>
+                  <div class="flex justify-between text-text-secondary">
+                    <span>Validated Quality Score:</span>
+                    <span id="v2-quality" class="text-success font-semibold">99 / 100</span>
+                  </div>
+                  <div class="flex justify-between text-text-secondary">
+                    <span>Duplicates Purged:</span>
+                    <span id="v2-dupes" class="text-success font-semibold">0 remaining (120 purged)</span>
+                  </div>
+                  <div class="flex justify-between text-text-secondary">
+                    <span>Imputations Resolved:</span>
+                    <span id="v2-nulls" class="text-success font-semibold">0 remaining (792 resolved)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cleaning Audit Stepper -->
+            <div class="border-t border-border-subtle pt-3">
+              <span class="text-[11px] font-semibold text-text-primary block mb-2">Immutable Cleaning Audit Trail (Lineage Justification)</span>
+              <div id="version-audit-trail" class="space-y-1.5 text-xs font-mono">
+                <!-- Populated dynamically via fetch /api/v1/datasets/version-comparison -->
               </div>
             </div>
           </div>
@@ -1978,7 +2042,56 @@ FROM transactions;</pre>
   <!-- TOAST CONTAINER -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-12 opacity-0 pointer-events-none transition-all duration-200 bg-bg-overlay border border-border-strong rounded shadow-xl px-4 py-3 flex items-center gap-3 text-xs text-text-primary">
     <i data-lucide="check-circle" class="w-4 h-4 text-success flex-shrink-0" id="toast-icon"></i>
-    <span id="toast-message">Report generated successfully</span>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- PROJECT SWITCHER MODAL (Phase 8) -->
+  <!-- ========================================== -->
+  <div id="project-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden" onclick="handleProjectModalBackdrop(event)">
+    <div class="bg-bg-surface border border-border-default rounded-lg w-full max-w-md shadow-2xl p-5 relative select-none" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-border-subtle pb-3 mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded bg-accent-500/15 border border-accent-border flex items-center justify-center text-accent-500">
+            <i data-lucide="folder-kanban" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-text-primary">Switch Analytics Project</h3>
+            <p class="text-[11px] text-text-tertiary">Select project or create a new multi-tenant workspace</p>
+          </div>
+        </div>
+        <button onclick="closeProjectModal()" class="text-text-tertiary hover:text-text-primary p-1 rounded hover:bg-bg-raised transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Project List Container -->
+      <div class="mb-4">
+        <span class="text-overline text-text-tertiary block mb-2">AVAILABLE PROJECTS (SQLITE DB)</span>
+        <div id="project-list-container" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+          <!-- Populated dynamically via GET /api/v1/projects -->
+        </div>
+      </div>
+
+      <!-- Create Project Inline Form -->
+      <div class="border-t border-border-subtle pt-3">
+        <span class="text-overline text-text-tertiary block mb-2">CREATE NEW PROJECT</span>
+        <div class="space-y-2">
+          <input type="text" id="new-project-name" placeholder="Project name (e.g. Q4 BFCM Sales)" class="w-full bg-bg-base border border-border-default rounded px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-500">
+          <div class="flex gap-2">
+            <select id="new-project-domain" class="bg-bg-base border border-border-default rounded px-2 py-1.5 text-xs text-text-secondary focus:outline-none focus:border-accent-500 flex-1">
+              <option value="retail">Omnichannel Retail</option>
+              <option value="ecommerce">E-Commerce & D2C</option>
+              <option value="wholesale">B2B Wholesale</option>
+              <option value="saas">Subscription Metrics</option>
+            </select>
+            <button onclick="submitNewProject()" class="px-3 py-1.5 rounded bg-accent-500 hover:bg-accent-400 text-on-accent text-xs font-semibold transition-colors flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Create</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- APPLICATION LOGIC & CHARTS JAVASCRIPT -->
@@ -2975,18 +3088,168 @@ ORDER BY purchase_date DESC;`;
       }
     }
 
+    // ==========================================
+    // Phase 8: Multi-Project Switcher & Management
+    // ==========================================
+    let ACTIVE_PROJECT_ID = 'default';
+
+    function openProjectModal() {
+      const modal = document.getElementById('project-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        loadProjectsList();
+      }
+    }
+
+    function closeProjectModal() {
+      const modal = document.getElementById('project-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function handleProjectModalBackdrop(e) {
+      if (e.target.id === 'project-modal') closeProjectModal();
+    }
+
+    async function loadProjectsList() {
+      const container = document.getElementById('project-list-container');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/v1/projects');
+        if (res.ok) {
+          const projects = await res.json();
+          container.innerHTML = projects.map(p => {
+            const isActive = (p.id === ACTIVE_PROJECT_ID) || (ACTIVE_PROJECT_ID === 'default' && p.domain === 'retail');
+            let domainBadge = 'text-accent-500 bg-accent-500/10 border-accent-border';
+            if (p.domain === 'ecommerce') domainBadge = 'text-info bg-info/10 border-info/30';
+            if (p.domain === 'wholesale') domainBadge = 'text-viz-6 bg-viz-6/10 border-viz-6/30';
+
+            return `
+              <div onclick="selectProject('${p.id}', '${p.name}', '${p.domain}')" class="p-2.5 rounded border ${isActive ? 'border-accent-500 bg-accent-500/10' : 'border-border-subtle bg-bg-raised hover:border-border-strong'} cursor-pointer transition-all flex items-center justify-between group">
+                <div class="truncate">
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <span class="text-xs font-semibold text-text-primary group-hover:text-accent-400 transition-colors">${p.name}</span>
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-mono border ${domainBadge}">${p.domain.toUpperCase()}</span>
+                  </div>
+                  <div class="text-[11px] text-text-tertiary truncate">${p.description || 'Omnichannel Analytics Pipeline'}</div>
+                </div>
+                ${isActive ? '<i data-lucide="check" class="w-4 h-4 text-accent-500 flex-shrink-0"></i>' : '<i data-lucide="arrow-right" class="w-3.5 h-3.5 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"></i>'}
+              </div>
+            `;
+          }).join('');
+          lucide.createIcons();
+        }
+      } catch (err) {
+        console.error('Failed to load projects:', err);
+      }
+    }
+
+    async function selectProject(id, name, domain) {
+      ACTIVE_PROJECT_ID = id;
+      const nameEl = document.getElementById('active-project-name');
+      const metaEl = document.getElementById('active-project-meta');
+      if (nameEl) nameEl.innerText = name;
+      if (metaEl) metaEl.innerText = `${domain.toUpperCase()} · Active Context`;
+
+      closeProjectModal();
+      showToast(`Switched workspace context to: ${name}`);
+
+      try {
+        await fetch(`/api/v1/projects/${id}/select`, { method: 'POST' });
+      } catch (e) {}
+    }
+
+    async function submitNewProject() {
+      const nameInput = document.getElementById('new-project-name');
+      const domainSelect = document.getElementById('new-project-domain');
+      const name = nameInput ? nameInput.value.trim() : '';
+      const domain = domainSelect ? domainSelect.value : 'retail';
+
+      if (!name) {
+        showToast('Please enter a project name');
+        return;
+      }
+
+      showToast(`Creating new project: ${name}...`);
+      try {
+        const res = await fetch('/api/v1/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, domain: domain, description: `Multi-tenant analytics project for ${name}` })
+        });
+        if (res.ok) {
+          const newProj = await res.json();
+          nameInput.value = '';
+          showToast(`✓ Created project: ${newProj.name}`);
+          selectProject(newProj.id, newProj.name, newProj.domain);
+        }
+      } catch (e) {
+        showToast('Error creating project in database');
+      }
+    }
+
+    // ==========================================
+    // Phase 8: Dataset Version Diff & Lineage View
+    // ==========================================
+    async function loadVersionComparison() {
+      try {
+        const res = await fetch('/api/v1/datasets/version-comparison');
+        if (res.ok) {
+          const data = await res.json();
+          const v1 = data.v1;
+          const v2 = data.v2;
+          const deltas = data.deltas;
+
+          // Update v1 cards
+          const v1Sha = document.getElementById('v1-sha');
+          if (v1Sha) v1Sha.innerText = `${v1.sha256_hash.substring(0, 16)}...`;
+          const v1Rows = document.getElementById('v1-rows');
+          if (v1Rows) v1Rows.innerText = v1.row_count.toLocaleString();
+          const v1Qual = document.getElementById('v1-quality');
+          if (v1Qual) v1Qual.innerText = `${v1.quality_score} / 100`;
+          const v1Dupes = document.getElementById('v1-dupes');
+          if (v1Dupes) v1Dupes.innerText = `${v1.duplicate_rows} duplicates`;
+          const v1Nulls = document.getElementById('v1-nulls');
+          if (v1Nulls) v1Nulls.innerText = `${v1.imputed_cells} cells`;
+
+          // Update v2 cards
+          const v2Sha = document.getElementById('v2-sha');
+          if (v2Sha) v2Sha.innerText = `${v2.sha256_hash.substring(0, 16)}...`;
+          const v2Rows = document.getElementById('v2-rows');
+          if (v2Rows) v2Rows.innerText = `${v2.row_count.toLocaleString()} (${deltas.rows_delta_pct}%)`;
+          const v2Qual = document.getElementById('v2-quality');
+          if (v2Qual) v2Qual.innerText = `${v2.quality_score} / 100`;
+
+          const qBadge = document.getElementById('version-quality-badge');
+          if (qBadge) qBadge.innerText = `Quality Score Improvement: +${deltas.quality_score_improvement} pts`;
+
+          // Populate Audit Trail
+          const auditContainer = document.getElementById('version-audit-trail');
+          if (auditContainer && data.audit_trail) {
+            auditContainer.innerHTML = data.audit_trail.map(a => `
+              <div class="p-2 rounded bg-bg-raised border border-border-subtle flex items-start gap-2">
+                <span class="text-accent-500 font-semibold flex-shrink-0">Step ${a.step_number} [${a.operation}]:</span>
+                <span class="text-text-secondary">${a.description}</span>
+                <span class="text-text-tertiary ml-auto text-[10px]">Justification: ${a.justification}</span>
+              </div>
+            `).join('');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load version comparison:', err);
+      }
+    }
+
     // Sync with Live FastAPI & DuckDB Backend Pipeline
     async function syncLiveOverview() {
       try {
         const res = await fetch('/api/v1/pipeline/overview');
         if (res.ok) {
           const data = await res.json();
-          // Update SHA-256 chip
           const shaChip = document.querySelector('.ml-4.flex.items-center span.text-text-tertiary');
           if (shaChip && data.cleaning && data.cleaning.cleaned_sha256) {
             shaChip.innerText = `(sha256: ${data.cleaning.cleaned_sha256.substring(0, 8)}...)`;
           }
-          // Update Quality Score
           if (data.quality_score !== undefined) {
             const scoreNum = document.querySelector('.text-2xl.font-bold.font-mono.text-text-primary');
             if (scoreNum) scoreNum.innerText = `${data.quality_score}/100`;
@@ -2996,9 +3259,10 @@ ORDER BY purchase_date DESC;`;
         // Graceful offline fallback
       }
 
-      // Trigger initial DuckDB temporal slicer & cohort drilldown
       applyDateSlicer('all');
       filterCustomerCohort('all');
+      loadVersionComparison();
+      loadProjectsList();
     }
 
     // Initialize all tables, charts, and listeners on DOM Ready
