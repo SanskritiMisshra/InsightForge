@@ -1,0 +1,45 @@
+# Virtual environments & local dependencies (Drive D isolation)
+.venv/
+.deps/
+.temp/
+env/
+venv/
+ENV/
+
+# Node & Next.js build artifacts
+node_modules/
+.next/
+out/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Local database instances & runtime logs
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+*.log
+
+# OS & IDE metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files & snippets
+.system_generated/
+.tempmediaStorage/
+temp-*
+new-*
+rects.html

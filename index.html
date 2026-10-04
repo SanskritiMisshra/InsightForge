@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>InsightForge | Automated Data Analytics & BI</title>
+<style>
+/* 2. Fonts */
+@font-face { font-family: 'SG'; font-style: normal; font-weight: 400; font-display: block; src: url(https://fonts.gstatic.com/s/spacegrotesk/v15/V8mQoQDjQSkG9_DZAxgFZB-IfxkDnr8.woff2) format('woff2'); }
+@font-face { font-family: 'SG'; font-style: normal; font-weight: 480; font-display: block; src: url(https://fonts.gstatic.com/s/spacegrotesk/v15/V8mPoQDjQSkG9_DZAxgFZB-IfxkDntPmwA.woff2) format('woff2'); }
+@font-face { font-family: 'SG'; font-style: normal; font-weight: 700; font-display: block; src: url(https://fonts.gstatic.com/s/spacegrotesk/v15/V8mPoQDjQSkG9_DZAxgFZB-IfxkDntPewA.woff2) format('woff2'); }
+@font-face { font-family: 'JB'; font-style: normal; font-weight: 400; font-display: block; src: url(https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxTOlOV.woff2) format('woff2'); }
+@font-face { font-family: 'JB'; font-style: normal; font-weight: 480; font-display: block; src: url(https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxTOlO-.woff2) format('woff2'); }
+
+/* 3. Design tokens / scaling system */
+:root {
+  --s: min(100vw / 1505, 100vh / 700);
+  --red: #c81b1c;
+  --ink: #fff;
+  --sub: #e6e6e6;
+  --lab: #949494;
+  --bx: 60; --by: 36; --bs: 44;
+  --h1y: -12.5; --suby: 167.5; --numy: 19; --laby: 74;
+  --spa: 239; --spb: 194; --spc: 115;
+}
+@media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
+  :root {
+    --s: clamp(0.82px, min(100vw / 900, 100vh / 1200), 1.25px);
+    --bx: 56; --by: 33; --bs: 40;
+    --h1y: -10.25; --suby: 137.4; --numy: 15.6; --laby: 60.7;
+    --spa: 340; --spb: 276; --spc: 163;
+  }
+}
+@media (max-width: 599px) {
+  :root {
+    --s: min(100vw / 430, 100vh / 620, 1.02px);
+    --bx: 26; --by: 21; --bs: 34;
+    --h1y: -7.1; --suby: 108; --numy: 13; --laby: 50;
+    --spa: 106; --spb: 92; --spc: 56;
+  }
+}
+
+/* 1. Document shell */
+html { scroll-behavior: smooth; }
+html, body { background: #000; margin: 0; padding: 0; }
+body { -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; font-family: 'SG', sans-serif; color: var(--ink); }
+* { box-sizing: border-box; }
+.svgdefs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* 4. Background video */
+.screen { position: relative; height: 100vh; overflow: hidden; background: #000; }
+.bg, .bg2 { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.bg { filter: url(#grade); }
+.bg video, .bg2 video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center top; display: block;
+}
+.bg2 {
+  filter: url(#grade2);
+  mix-blend-mode: plus-lighter;
+  opacity: .35;
+  -webkit-mask-image: linear-gradient(180deg, transparent 21.5%, #000 100%);
+  mask-image: linear-gradient(180deg, transparent 21.5%, #000 100%);
+}
+.scrim { display: none; }
+
+/* Tablet video */
+@media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
+  .bg2 { display: none; }
+  .bg video { object-position: right top; transform: scale(1.18); transform-origin: right top; }
+  .bg {
+    -webkit-mask-image: linear-gradient(180deg, #000 0 40%, transparent 64%);
+    mask-image: linear-gradient(180deg, #000 0 40%, transparent 64%);
+  }
+  .scrim {
+    display: block; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(100deg, #000 26%, rgba(0,0,0,.74) 50%, rgba(0,0,0,.18) 76%, transparent 92%);
+  }
+}
+
+/* Phone video */
+@media (max-width: 599px) {
+  .bg video { object-position: 78% top; transform: scale(1); }
+  .bg2 { display: block; }
+  .bg2 video { object-position: 78% top; }
+  .bg2 {
+    -webkit-mask-image: linear-gradient(180deg, transparent 10%, #000 60%);
+    mask-image: linear-gradient(180deg, transparent 10%, #000 60%);
+  }
+  .scrim {
+    display: block; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.50) 24%, rgba(0,0,0,.86) 42%, #000 66%);
+  }
+}
+
+/* DOM structure */
+.frame {
+  display: flex; flex-direction: column; width: 100%; height: 100vh; position: relative; z-index: 10;
+}
+.sp { width: 100%; }
+.sp-a { flex: var(--spa); height: calc(var(--spa) * var(--s)); }
+.sp-b { flex: var(--spb); height: calc(var(--spb) * var(--s)); }
+.sp-c { flex: var(--spc); height: calc(var(--spc) * var(--s)); }
+
+/* Header */
+header { position: absolute; top: 0; left: 0; width: 100%; z-index: 20; }
+.logo {
+  position: absolute;
+  left: calc(60 * var(--s));
+  top: calc(35 * var(--s));
+  width: calc(45 * var(--s));
+  height: calc(45 * var(--s));
+}
+.nav {
+  position: absolute;
+  left: calc(482 * var(--s));
+  top: calc(32 * var(--s));
+  height: calc(58 * var(--s));
+  display: flex; align-items: center;
+}
+.nav a {
+  font-family: 'JB'; font-weight: 400; font-size: calc(19.9 * var(--s));
+  color: #fff; text-decoration: none; display: flex; align-items: center;
+  margin-left: calc(40 * var(--s)); transition: color 0.3s;
+}
+.nav a:first-child { margin-left: 0; }
+.nav a:nth-child(2) { margin-left: calc(53 * var(--s)); }
+.nav a:nth-child(4) { margin-left: calc(37 * var(--s)); }
+.nav svg {
+  width: calc(11.6 * var(--s)); height: calc(7.2 * var(--s));
+  stroke: currentColor; stroke-width: 1.7; stroke-linecap: butt; fill: none;
+  margin-left: calc(6 * var(--s)); margin-top: calc(-2.6 * var(--s));
+}
+.btn {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--red); color: #fff; text-decoration: none; cursor: pointer;
+  border: none; border-radius: 0; outline: none;
+}
+.btn-label { font-family: 'SG'; font-weight: 480; transform: translateY(calc(1.5 * var(--s))); }
+.btn-icon { fill: none; stroke: #fff; stroke-width: 2; transition: transform 0.3s; }
+.btn-top { position: absolute; left: calc(1232 * var(--s)); top: calc(30 * var(--s)); }
+
+/* Buttons Media */
+.btn-top, .btn-cta {
+  width: calc(212 * var(--s)); height: calc(58 * var(--s));
+  padding-left: calc(18 * var(--s)); padding-right: calc(22 * var(--s)); gap: calc(11 * var(--s));
+}
+.btn-label { font-size: calc(20.85 * var(--s)); letter-spacing: calc(-0.62 * var(--s)); }
+.btn-icon { width: calc(21.5 * var(--s)); height: calc(18 * var(--s)); }
+
+@media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
+  .btn-top, .btn-cta {
+    width: calc(174 * var(--s)); height: calc(47.6 * var(--s));
+    padding-left: calc(14.8 * var(--s)); padding-right: calc(18 * var(--s)); gap: calc(9 * var(--s));
+  }
+  .btn-label { font-size: calc(17.1 * var(--s)); }
+}
+@media (max-width: 599px) {
+  .btn-top, .btn-cta {
+    width: calc(185 * var(--s)); height: calc(50 * var(--s));
+    padding-left: calc(15.7 * var(--s)); padding-right: calc(19.1 * var(--s)); gap: calc(9.6 * var(--s));
+  }
+  .btn-label { font-size: calc(17.5 * var(--s)); }
+}
+
+/* Burger */
+.burger {
+  position: absolute; right: calc(var(--bx) * var(--s)); top: calc(var(--by) * var(--s));
+  width: calc(var(--bs) * var(--s)); height: calc(var(--bs) * var(--s));
+  display: none; flex-direction: column; justify-content: space-evenly; align-items: flex-end;
+  padding: calc(10 * var(--s)) 0; z-index: 100; cursor: pointer; background: transparent; border: none;
+}
+.burger span { width: 100%; height: calc(2 * var(--s)); background: #fff; transition: 0.3s; transform-origin: center; }
+.burger span.short { width: 47%; }
+.nav-open .burger span.short { width: 100%; }
+.nav-open .burger span:nth-child(1) { transform: translateY(calc(8.5 * var(--s))) rotate(45deg); }
+.nav-open .burger span:nth-child(2) { opacity: 0; }
+.nav-open .burger span:nth-child(3) { transform: translateY(calc(-8.5 * var(--s))) rotate(-45deg); }
+@media (max-width: 1023px) {
+  .nav, .btn-top { display: none; }
+  .burger { display: flex; }
+}
+
+/* Hero */
+.hero { position: relative; height: calc(152 * var(--s)); flex-shrink: 0; width: 100%; }
+.hero > * { position: absolute; }
+h1 {
+  font-family: 'SG'; font-weight: 700; font-size: calc(68.7 * var(--s)); line-height: calc(76 / 68.7);
+  letter-spacing: calc(-2.4 * var(--s)); left: calc(73 * var(--s)); top: calc(var(--h1y) * var(--s));
+  margin: 0; white-space: nowrap;
+}
+h1 .ln { display: block; overflow: hidden; padding-bottom: calc(6 * var(--s)); margin-bottom: calc(-6 * var(--s)); }
+h1 .ln span { display: block; }
+.sub {
+  font-family: 'JB'; font-weight: 400; font-size: calc(18.7 * var(--s)); line-height: calc(26 / 18.7);
+  letter-spacing: calc(-0.87 * var(--s)); color: var(--sub);
+  left: calc(73 * var(--s)); top: calc(var(--suby) * var(--s)); white-space: pre-wrap; margin: 0;
+}
+.btn-cta { left: calc(73 * var(--s)); top: calc(248 * var(--s)); }
+
+/* Stats */
+.stats { position: relative; height: 0; flex-shrink: 0; width: 100%; }
+.stats > * { position: absolute; }
+.stat-num {
+  font-family: 'JB'; font-weight: 480; font-size: calc(33.45 * var(--s)); color: #fff;
+  top: calc(var(--numy) * var(--s)); white-space: nowrap;
+}
+.stat-lab {
+  font-family: 'SG'; font-weight: 400; font-size: calc(21.9 * var(--s));
+  letter-spacing: calc(-0.62 * var(--s)); color: var(--lab);
+  top: calc(var(--laby) * var(--s)); white-space: nowrap;
+}
+.s1 { left: calc(70.4 * var(--s)); }
+.s2 { left: calc(213.1 * var(--s)); }
+.s3 { left: calc(392.6 * var(--s)); }
+.s3 .stat-num { transform: translateX(calc(-4.4 * var(--s))); }
+
+.rule {
+  position: absolute; width: calc(1.5 * var(--s)); top: calc(12 * var(--s)); height: calc(85 * var(--s));
+  background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.21) 50%, rgba(255,255,255,.085));
+  transform-origin: center;
+}
+.r1 { left: calc(181 * var(--s)); }
+.r2 { left: calc(356 * var(--s)); }
+
+/* Mobile Menu */
+#menu {
+  position: fixed; inset: 0; background: #000; z-index: 50; display: none; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s;
+}
+.nav-open #menu { opacity: 1; pointer-events: auto; }
+@media (max-width: 1023px) { #menu { display: flex; } }
+.menu-tex { position: absolute; inset: 0; opacity: 0.4; pointer-events: none; }
+.menu-tex video { width: 100%; height: 100%; object-fit: cover; }
+.menu-tex { -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 20%); mask-image: linear-gradient(180deg, transparent 0%, #000 20%); }
+
+.menu-rule {
+  position: absolute; top: calc(100 * var(--s)); left: 0; width: 100%; height: calc(2 * var(--s));
+  background: var(--red); transform: scaleX(0); transform-origin: left;
+}
+.nav-open .menu-rule { transform: scaleX(1); transition: transform 0.55s cubic-bezier(.2,.7,.2,1) 0.04s; }
+
+.menu-inner {
+  position: relative; z-index: 2; padding: calc(120 * var(--s)) calc(40 * var(--s)) calc(40 * var(--s));
+  display: flex; flex-direction: column; height: 100%;
+}
+.menu-eb {
+  font-family: 'JB'; font-size: calc(11.5 * var(--s)); letter-spacing: calc(0.22em * var(--s));
+  text-transform: uppercase; color: var(--lab); margin-bottom: calc(30 * var(--s));
+}
+.mrow-wrap { opacity: 0; transform: translateY(calc(20 * var(--s))); transition: opacity 0.4s, transform 0.4s; }
+.nav-open .mrow-wrap:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.08s; }
+.nav-open .mrow-wrap:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.14s; }
+.nav-open .mrow-wrap:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 0.20s; }
+.nav-open .mrow-wrap:nth-child(5) { opacity: 1; transform: translateY(0); transition-delay: 0.26s; }
+
+.mrow { font-family: 'SG'; font-weight: 700; font-size: calc(40 * var(--s)); color: #fff; display: block; margin-bottom: calc(20 * var(--s)); text-decoration: none; }
+.mrow-sub { display: flex; flex-direction: column; overflow: hidden; max-height: 0; transition: max-height 0.4s; }
+.mrow-sub a { font-family: 'JB'; font-size: calc(18 * var(--s)); color: var(--sub); margin-bottom: calc(15 * var(--s)); text-decoration: none; }
+.acc-open .mrow-sub { max-height: calc(300 * var(--s)); }
+.menu-footer { margin-top: auto; }
+.btn-menu { width: 100%; height: calc(60 * var(--s)); padding: 0 calc(20 * var(--s)); }
+.btn-menu .btn-label { font-size: calc(20 * var(--s)); }
+.menu-note { font-family: 'JB'; font-size: calc(12 * var(--s)); color: var(--lab); text-align: center; margin-top: calc(15 * var(--s)); }
+
+/* Interaction & a11y */
+@media (hover: hover) {
+  .nav a:hover { color: var(--red); }
+  .btn:hover { background: #b01617; }
+  .btn:hover .btn-icon { transform: translateX(calc(3 * var(--s))); }
+  .mrow:hover { color: var(--red); }
+  .mrow-sub a:hover { color: #fff; }
+}
+:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* Entrance Animation CSS */
+html.intro .logo, html.intro .nav a, html.intro .burger, html.intro .sub, html.intro .stat-num, html.intro .stat-lab { opacity: 0; }
+html.intro .btn-top, html.intro .btn-cta { clip-path: inset(0 100% 0 0); }
+html.intro h1 .ln { overflow: hidden; padding-bottom: calc(6 * var(--s)); margin-bottom: calc(-6 * var(--s)); }
+html.intro h1 .ln span { transform: translateY(120%); }
+html.intro .rule { transform: scaleY(0); }
+</style>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+</script>
+<script>
+if (typeof Element !== 'undefined' && Element.prototype.animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.documentElement.classList.add('intro');
+}
+</script>
+</head>
+<body>
+
+<svg class="svgdefs">
+  <filter id="grade" color-interpolation-filters="sRGB">
+    <feComponentTransfer>
+      <feFuncR type="table" tableValues="0.0018 0.0105 0.0154 0.0228 0.0307 0.0404 0.0485 0.0585 0.0719 0.0923 0.1205 0.1466 0.1657 0.1866 0.2197 0.2405 0.2485 0.2921 0.3362 0.3465 0.3472 0.3781 0.3781 0.4078 0.4199 0.4391 0.4604 0.4763 0.4798 0.5197 0.5473 0.5720 0.5995 0.6048 0.6232 0.6322 0.6483 0.6734 0.7201 0.7201 0.7410 0.7707 0.7707 0.7790 0.8084 0.8084 0.8390 0.8595 0.8707 0.8870 0.8993 0.9085 0.9132 0.9132 0.9162 0.9162 0.9162 0.9162 0.9162 0.9162 0.9162 0.9162 0.9162 0.9238 0.9300"/>
+      <feFuncG type="table" tableValues="0.0023 0.0106 0.0159 0.0250 0.0333 0.0445 0.0535 0.0620 0.0707 0.0827 0.0936 0.1063 0.1214 0.1402 0.1678 0.1727 0.2029 0.2176 0.2461 0.2757 0.2814 0.3050 0.3415 0.3692 0.3826 0.3884 0.4617 0.4617 0.4617 0.4643 0.4643 0.4808 0.5706 0.6005 0.6005 0.6390 0.6390 0.6390 0.6390 0.6390 0.6390 0.6390 0.6390 0.6390 0.6524 0.6664 0.6805 0.6945 0.7086 0.7227 0.7367 0.7508 0.7648 0.7789 0.7929 0.8070 0.8211 0.8351 0.8492 0.8632 0.8773 0.8913 0.9054 0.9195 0.9300"/>
+      <feFuncB type="table" tableValues="0.0021 0.0110 0.0187 0.0311 0.0377 0.0466 0.0584 0.0706 0.0791 0.0924 0.1039 0.1145 0.1316 0.1464 0.1614 0.1719 0.1887 0.2014 0.2247 0.2458 0.2954 0.2954 0.3089 0.3938 0.3938 0.3988 0.3988 0.4581 0.4581 0.4762 0.4762 0.4763 0.5374 0.5560 0.5813 0.5813 0.5813 0.5813 0.5835 0.5969 0.6104 0.6238 0.6373 0.6507 0.6642 0.6777 0.6911 0.7046 0.7181 0.7315 0.7449 0.7584 0.7719 0.7853 0.7988 0.8123 0.8257 0.8391 0.8526 0.8661 0.8795 0.8930 0.9065 0.9199 0.9300"/>
+    </feComponentTransfer>
+  </filter>
+  <filter id="grade2" color-interpolation-filters="sRGB">
+    <feComponentTransfer>
+      <feFuncR type="table" tableValues="0.0016 0.0092 0.0136 0.0201 0.0270 0.0356 0.0427 0.0515 0.0633 0.0812 0.1060 0.1290 0.1458 0.1642 0.1933 0.2116 0.2187 0.2570 0.2959 0.3049 0.3055 0.3327 0.3327 0.3589 0.3695 0.3864 0.4052 0.4191 0.4222 0.4573 0.4816 0.5034 0.5276 0.5322 0.5484 0.5563 0.5705 0.5926 0.6337 0.6337 0.6521 0.6782 0.6782 0.6855 0.7114 0.7114 0.7383 0.7564 0.7662 0.7806 0.7914 0.7995 0.8036 0.8036 0.8063 0.8063 0.8063 0.8063 0.8063 0.8063 0.8063 0.8063 0.8063 0.8129 0.8184"/>
+      <feFuncG type="table" tableValues="0.0015 0.0069 0.0103 0.0163 0.0216 0.0289 0.0348 0.0403 0.0460 0.0538 0.0608 0.0691 0.0789 0.0911 0.1091 0.1123 0.1319 0.1414 0.1600 0.1792 0.1829 0.1983 0.2220 0.2400 0.2487 0.2525 0.3001 0.3001 0.3001 0.3018 0.3018 0.3125 0.3709 0.3903 0.3903 0.4153 0.4153 0.4153 0.4153 0.4153 0.4153 0.4153 0.4153 0.4153 0.4241 0.4332 0.4423 0.4514 0.4606 0.4698 0.4789 0.4880 0.4971 0.5063 0.5154 0.5246 0.5337 0.5428 0.5520 0.5611 0.5702 0.5793 0.5885 0.5977 0.6045"/>
+      <feFuncB type="table" tableValues="0.0013 0.0066 0.0112 0.0187 0.0226 0.0280 0.0350 0.0424 0.0475 0.0554 0.0623 0.0687 0.0790 0.0878 0.0968 0.1031 0.1132 0.1208 0.1348 0.1475 0.1772 0.1772 0.1853 0.2363 0.2363 0.2393 0.2393 0.2749 0.2749 0.2857 0.2857 0.2858 0.3224 0.3336 0.3488 0.3488 0.3488 0.3488 0.3501 0.3581 0.3662 0.3743 0.3824 0.3904 0.3985 0.4066 0.4147 0.4228 0.4309 0.4389 0.4469 0.4550 0.4631 0.4712 0.4793 0.4874 0.4954 0.5035 0.5116 0.5197 0.5277 0.5358 0.5439 0.5519 0.5580"/>
+    </feComponentTransfer>
+  </filter>
+</svg>
+
+<div class="screen">
+  <div class="bg">
+    <video src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" autoplay muted loop playsinline preload="auto"></video>
+  </div>
+  <div class="bg2">
+    <video src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" autoplay muted loop playsinline preload="auto"></video>
+  </div>
+  <div class="scrim"></div>
+  
+  <div class="frame">
+    <header>
+      <svg class="logo" viewBox="0 0 46 46">
+        <path d="M23 0V19.5 M14 10.2L23 19.2L32 10.2" stroke="#fff" stroke-width="3" stroke-linecap="butt" fill="none" />
+        <path d="M23 0V19.5 M14 10.2L23 19.2L32 10.2" stroke="#fff" stroke-width="3" stroke-linecap="butt" fill="none" transform="rotate(90 23 23)" />
+        <path d="M23 0V19.5 M14 10.2L23 19.2L32 10.2" stroke="#fff" stroke-width="3" stroke-linecap="butt" fill="none" transform="rotate(180 23 23)" />
+        <path d="M23 0V19.5 M14 10.2L23 19.2L32 10.2" stroke="#fff" stroke-width="3" stroke-linecap="butt" fill="none" transform="rotate(270 23 23)" />
+      </svg>
+      <nav class="nav">
+        <a href="#platform">Platform</a>
+        <a href="#capabilities">Capabilities</a>
+        <a href="#solutions">Solutions</a>
+        <a href="workspace.html">Workspace</a>
+        <a href="auth.html">Log in</a>
+      </nav>
+      <button class="burger" aria-label="Open menu">
+        <span></span><span></span><span class="short"></span>
+      </button>
+      <a href="workspace.html" class="btn btn-top">
+        <span class="btn-label">Launch App</span>
+        <svg class="btn-icon" viewBox="0 0 21.5 18"><path d="M0 9H20.1 M12.1 1L20.1 9L12.1 17"/></svg>
+      </a>
+    </header>
+
+    <div class="sp sp-a"></div>
+    
+    <section class="hero">
+      <h1>
+        <span class="ln"><span>Automated analytics</span></span>
+        <span class="ln"><span>from raw data to BI</span></span>
+      </h1>
+      <p class="sub">Upload your datasets to automatically clean, analyze,
+and generate executive insights in minutes.</p>
+      <a href="workspace.html" class="btn btn-cta">
+        <span class="btn-label">Launch Workspace</span>
+        <svg class="btn-icon" viewBox="0 0 21.5 18"><path d="M0 9H20.1 M12.1 1L20.1 9L12.1 17"/></svg>
+      </a>
+    </section>
+
+    <div class="sp sp-b"></div>
+
+    <section class="stats">
+      <div class="s1">
+        <div class="stat-num">10M+</div>
+        <div class="stat-lab">Rows Cleaned</div>
+      </div>
+      <div class="rule r1"></div>
+      <div class="s2">
+        <div class="stat-num">100%</div>
+        <div class="stat-lab">Automated</div>
+      </div>
+      <div class="rule r2"></div>
+      <div class="s3">
+        <div class="stat-num" data-tx="calc(-4.4 * var(--s))">10x</div>
+        <div class="stat-lab">Faster BI</div>
+      </div>
+    </section>
+
+    <div class="sp sp-c"></div>
+  </div>
+
+  <div id="menu" class="menu">
+    <div class="menu-tex"><video src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260809_132544_b6ef0174-ed95-45ad-9a2f-ccb8acfbdce8.mp4" autoplay muted loop playsinline preload="auto"></video></div>
+    <div class="menu-rule"></div>
+    <div class="menu-inner">
+      <div class="menu-eb">MENU</div>
+      <div class="mrow-wrap"><a href="#" class="mrow">Platform</a></div>
+      <div class="mrow-wrap">
+        <a href="#" class="mrow">Solutions ▾</a>
+        <div class="mrow-sub">
+          <a href="#">Data Engineering</a><a href="#">Automated EDA</a><a href="#">BI & Reporting</a>
+        </div>
+      </div>
+      <div class="mrow-wrap">
+        <a href="#" class="mrow">Capabilities ▾</a>
+        <div class="mrow-sub">
+          <a href="#">Python Integration</a><a href="#">SQL Warehousing</a><a href="#">AI Insights</a>
+        </div>
+      </div>
+      <div class="mrow-wrap"><a href="workspace.html" class="mrow">Workspace</a></div>
+      <div class="mrow-wrap"><a href="auth.html" class="mrow">Log in</a></div>
+      
+      <div class="menu-footer">
+        <a href="workspace.html" class="btn btn-menu">
+          <span class="btn-label">Launch Workspace</span>
+          <svg class="btn-icon" viewBox="0 0 21.5 18"><path d="M0 9H20.1 M12.1 1L20.1 9L12.1 17"/></svg>
+        </a>
+        <div class="menu-note">10M+ rows cleaned &nbsp;/&nbsp; 100% automated</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', () => {
+  const isIntro = document.documentElement.classList.contains('intro');
+  const vids = document.querySelectorAll('video');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Video sync
+  if (reducedMotion) {
+    vids.forEach(v => { v.removeAttribute('autoplay'); v.pause(); });
+  } else if (vids.length > 1) {
+    const master = vids[0];
+    master.addEventListener('timeupdate', () => {
+      for (let i = 1; i < vids.length; i++) {
+        if (Math.abs(vids[i].currentTime - master.currentTime) > 0.12) {
+          vids[i].currentTime = master.currentTime;
+        }
+      }
+    });
+  }
+
+  // Entrance Anim
+  if (!isIntro) return;
+
+  const start = () => {
+    const mult = window.matchMedia('(max-width: 599px)').matches ? 0.86 : 1;
+    const EXPO = 'cubic-bezier(.16,1,.3,1)';
+    const QUINT = 'cubic-bezier(.22,1,.36,1)';
+    const QUART = 'cubic-bezier(.25,1,.5,1)';
+    const TYPE = 'cubic-bezier(.22,.85,.24,1)';
+    const anims = [];
+
+    const logo = document.querySelector('.logo');
+    anims.push(logo.animate([
+      { opacity: 0, transform: 'scale(0.9)' },
+      { opacity: 1, transform: 'scale(1)' }
+    ], { duration: 700 * mult, delay: 0, easing: EXPO, fill: 'forwards' }));
+
+    const navs = document.querySelectorAll('.nav a');
+    navs.forEach((n, i) => {
+      anims.push(n.animate([
+        { opacity: 0, transform: 'translateY(calc(7 * var(--s)))' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 620 * mult, delay: (120 + i * 55) * mult, easing: QUINT, fill: 'forwards' }));
+    });
+
+    const burger = document.querySelector('.burger');
+    if (getComputedStyle(burger).display !== 'none') {
+      anims.push(burger.animate([
+        { opacity: 0 },
+        { opacity: 1 }
+      ], { duration: 550 * mult, delay: 180 * mult, easing: QUART, fill: 'forwards' }));
+    }
+
+    const btnTop = document.querySelector('.btn-top');
+    anims.push(btnTop.animate([
+      { clipPath: 'inset(0 100% 0 0)' },
+      { clipPath: 'inset(0 0% 0 0)' }
+    ], { duration: 660 * mult, delay: 280 * mult, easing: EXPO, fill: 'forwards' }));
+
+    const lines = document.querySelectorAll('h1 .ln span');
+    lines.forEach((l, i) => {
+      anims.push(l.animate([
+        { transform: 'translateY(120%)' },
+        { transform: 'translateY(0)' }
+      ], { duration: 980 * mult, delay: (340 + i * 90) * mult, easing: TYPE, fill: 'forwards' }));
+    });
+
+    const sub = document.querySelector('.sub');
+    anims.push(sub.animate([
+      { opacity: 0, transform: 'translateY(calc(14 * var(--s)))' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], { duration: 720 * mult, delay: 740 * mult, easing: QUINT, fill: 'forwards' }));
+
+    const cta = document.querySelector('.btn-cta');
+    anims.push(cta.animate([
+      { clipPath: 'inset(0 100% 0 0)' },
+      { clipPath: 'inset(0 0% 0 0)' }
+    ], { duration: 700 * mult, delay: 900 * mult, easing: EXPO, fill: 'forwards' }));
+
+    const rules = document.querySelectorAll('.rule');
+    rules.forEach((r, i) => {
+      anims.push(r.animate([
+        { transform: 'scaleY(0)' },
+        { transform: 'scaleY(1)' }
+      ], { duration: 600 * mult, delay: (980 + i * 70) * mult, easing: QUART, fill: 'forwards' }));
+    });
+
+    const nums = document.querySelectorAll('.stat-num');
+    nums.forEach((n, i) => {
+      const tx = n.dataset.tx || '0px';
+      anims.push(n.animate([
+        { opacity: 0, transform: `translate(${tx}, calc(12 * var(--s)))` },
+        { opacity: 1, transform: `translate(${tx}, 0)` }
+      ], { duration: 660 * mult, delay: (1040 + i * 85) * mult, easing: QUINT, fill: 'forwards' }));
+    });
+
+    const labs = document.querySelectorAll('.stat-lab');
+    labs.forEach((l, i) => {
+      anims.push(l.animate([
+        { opacity: 0, transform: 'translateY(calc(10 * var(--s)))' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 620 * mult, delay: (1100 + i * 85) * mult, easing: QUINT, fill: 'forwards' }));
+    });
+
+    Promise.all(anims.map(a => a.finished)).then(() => {
+      document.documentElement.classList.remove('intro');
+      anims.forEach(a => a.cancel());
+    });
+
+    setTimeout(() => {
+      if (document.documentElement.classList.contains('intro')) {
+        document.documentElement.classList.remove('intro');
+        anims.forEach(a => a.cancel());
+      }
+    }, 4000);
+  };
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => requestAnimationFrame(start));
+  } else {
+    setTimeout(() => requestAnimationFrame(start), 1000);
+  }
+});
+
+// Mobile menu logic
+const burger = document.querySelector('.burger');
+const mrows = document.querySelectorAll('.mrow');
+burger.addEventListener('click', () => {
+  document.body.classList.toggle('nav-open');
+  burger.setAttribute('aria-label', document.body.classList.contains('nav-open') ? 'Close menu' : 'Open menu');
+});
+mrows.forEach(r => {
+  r.addEventListener('click', (e) => {
+    const parent = r.parentElement;
+    if (parent.querySelector('.mrow-sub')) {
+      e.preventDefault();
+      const wasOpen = parent.classList.contains('acc-open');
+      document.querySelectorAll('.mrow-wrap').forEach(w => w.classList.remove('acc-open'));
+      if (!wasOpen) parent.classList.add('acc-open');
+    } else {
+      document.body.classList.remove('nav-open');
+    }
+  });
+});
+window.addEventListener('resize', () => {
+  if (window.innerWidth >= 1024) document.body.classList.remove('nav-open');
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') document.body.classList.remove('nav-open');
+});
+</script>
+<div id="platform" class="agentic-factory-3d" style="height: 100vh; position: relative;">
+  <div id="scene" role="img" aria-label="Interactive 3D machine"></div>
+  <div class="vignette"></div>
+  <header class="topbar debug-ui">
+    <div class="identity">
+      <div class="mark">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+          <path d="M3 5l7 11 7-11M7 5l3 5 3-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <strong>Agentic Factory</strong>
+        <small>Interactive workshop</small>
+      </div>
+    </div>
+    <div class="status" id="status">
+      <i></i>
+      <span id="status-text">Machine running</span>
+      <span>SERIES 001</span>
+    </div>
+  </header>
+  <div class="scene-heading debug-ui">
+    The pipeline you will build <span class="index">5 STAGES / 1 SYSTEM</span>
+  </div>
+  <div class="coordinates debug-ui">PROTOTYPE 01 — FROM RAW DATA TO EXECUTIVE INSIGHTS</div>
+  <div id="journey" class="debug-ui">
+    <div class="journey-icon">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 4h10v9H3zM6 4V2h4v2m-5 4h6" stroke="currentColor" stroke-linejoin="round"/></svg>
+    </div>
+    <div>
+      <strong id="journey-title">Data Source</strong>
+      <small id="journey-detail">Cabinet · dataset uploaded</small>
+    </div>
+    <div class="track"><i id="journey-progress"></i></div>
+  </div>
+  <div id="labels"></div>
+  <div id="tooltip" role="tooltip">
+    <strong></strong><p></p>
+  </div>
+  <div class="controls debug-ui">
+    <nav class="mode-bar" aria-label="Machine mode">
+      <button data-mode="assembled" aria-pressed="true"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5l6 3.3v6.4l-6 3.3-6-3.3V4.8L8 1.5zM2 4.8l6 3.4 6-3.4M8 8.2v6.3" stroke="currentColor" stroke-linejoin="round"/></svg>Assembled</button>
+      <button data-mode="cutaway" aria-pressed="false"><svg viewBox="0 0 16 16" fill="none"><path d="M3 2h10v12H3zM8 2v12M10.5 4l2.5 2.5m-2.5 0L13 9m-2.5 0 2.5 2.5" stroke="currentColor" stroke-linejoin="round"/></svg>Cutaway</button>
+      <button data-mode="stations" aria-pressed="false"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5l6 3-6 3-6-3 6-3zM2 8l6 3 6-3M2 11.5l6 3 6-3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>Stations</button>
+      <button data-mode="order" aria-pressed="false"><svg viewBox="0 0 16 16" fill="none"><path d="M5 2.5l8 5.5-8 5.5v-11z" stroke="currentColor" stroke-linejoin="round"/></svg>One order</button>
+    </nav>
+    <nav class="camera-row" aria-label="Camera">
+      <span class="caption">VIEW</span>
+      <button data-camera="overview" aria-pressed="true">Overview</button>
+      <button data-camera="side" aria-pressed="false">Side</button>
+      <button data-camera="top" aria-pressed="false">Top</button>
+      <button data-camera="station" aria-pressed="false">Station</button>
+      <button data-camera="flight" aria-pressed="false">Flight</button>
+      <span class="divider"></span>
+      <button id="play" aria-label="Pause the animation" aria-pressed="false">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+          <rect x="2" y="1" width="2.5" height="10" rx=".5"/>
+          <rect x="7.5" y="1" width="2.5" height="10" rx=".5"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+  <footer class="footer">
+    <a class="wordmark" href="https://vibecoding.tech" target="_blank" rel="noopener">made with AI agents · <span>vibecoding.tech</span></a>
+    <span class="footer-center debug-ui">DESIGNED BY YOU</span>
+    <span class="hint debug-ui">
+      <svg width="13" height="16" viewBox="0 0 13 16" fill="none"><rect x="2" y="1" width="9" height="14" rx="4.5" stroke="currentColor"/><path d="M6.5 4v3" stroke="currentColor" stroke-linecap="round"/></svg>
+      Rotate. Zoom. Explore.
+    </span>
+  </footer>
+  <div id="loading"><i></i><span>Assembling your machine</span></div>
+  <div id="error" role="alert" style="display:none">
+    <strong>Could not start the 3D scene</strong><p></p>
+    <button onclick="location.reload()">Try again</button>
+  </div>
+</div>
+
+<section id="capabilities" class="new-section">
+  <div class="ns-container">
+    <h2 class="ns-title">Core Capabilities</h2>
+    <div class="bento-grid">
+      <div class="anim-card bento-large">
+        <div class="ac-visual">
+          <div class="ac-grid"></div>
+          <div class="ac-ellipse">
+            <svg width="356" height="196" viewBox="0 0 356 180" fill="none">
+              <rect width="356" height="180" fill="url(#ac-rad)" />
+              <defs>
+                <radialGradient id="ac-rad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(178 98) rotate(90) scale(98 178)">
+                  <stop stop-color="var(--ac-main)" stop-opacity="0.25" />
+                  <stop offset="0.34" stop-color="var(--ac-main)" stop-opacity="0.15" />
+                  <stop offset="1" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="ac-layer1">
+            <div class="ac-pill"><div class="ac-pill-dot" style="background:var(--ac-main)"></div><span>+15.2%</span></div>
+            <div class="ac-pill"><div class="ac-pill-dot" style="background:var(--ac-sec)"></div><span>+18.7%</span></div>
+          </div>
+          <div class="ac-layer2">
+            <div class="ac-tooltip">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="ac-pill-dot" style="background:var(--ac-main)"></div>
+                <span style="font-size:12px;color:#fff;font-family:'SG'">Automated Pipeline</span>
+              </div>
+              <p style="font-size:11px;color:#a0a0a0;margin:4px 0 0;font-family:'JB'">Optimizing 10M+ records seamlessly.</p>
+            </div>
+          </div>
+          <div class="ac-layer3"></div>
+          <div class="ac-layer4">
+            <svg width="356" height="180">
+              <rect width="15" x="40" class="ac-rect" rx="2" ry="2" style="--h: 20px; --y: 110px; --hh: 20px; --hy: 130px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="60" class="ac-rect" rx="2" ry="2" style="--h: 20px; --y: 90px; --hh: 20px; --hy: 130px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="80" class="ac-rect" rx="2" ry="2" style="--h: 40px; --y: 70px; --hh: 30px; --hy: 120px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="100" class="ac-rect" rx="2" ry="2" style="--h: 30px; --y: 80px; --hh: 50px; --hy: 100px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="120" class="ac-rect" rx="2" ry="2" style="--h: 30px; --y: 110px; --hh: 40px; --hy: 110px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="140" class="ac-rect" rx="2" ry="2" style="--h: 50px; --y: 110px; --hh: 20px; --hy: 130px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="160" class="ac-rect" rx="2" ry="2" style="--h: 50px; --y: 60px; --hh: 30px; --hy: 120px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="180" class="ac-rect" rx="2" ry="2" style="--h: 30px; --y: 80px; --hh: 20px; --hy: 130px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="200" class="ac-rect" rx="2" ry="2" style="--h: 20px; --y: 110px; --hh: 40px; --hy: 110px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="220" class="ac-rect" rx="2" ry="2" style="--h: 40px; --y: 70px; --hh: 60px; --hy: 90px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="240" class="ac-rect" rx="2" ry="2" style="--h: 30px; --y: 110px; --hh: 70px; --hy: 80px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="260" class="ac-rect" rx="2" ry="2" style="--h: 50px; --y: 110px; --hh: 50px; --hy: 100px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="280" class="ac-rect" rx="2" ry="2" style="--h: 20px; --y: 110px; --hh: 80px; --hy: 70px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="300" class="ac-rect" rx="2" ry="2" style="--h: 30px; --y: 80px; --hh: 90px; --hy: 60px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="ac-body">
+          <h3>Automated Data Cleaning</h3>
+          <p>No more manual wrangling. Our AI agents automatically detect anomalies, fill missing values, and normalize schemas across all your unstructured sources.</p>
+        </div>
+      </div>
+      
+      <div class="anim-card" style="--ac-main: #3b82f6; --ac-sec: #60a5fa;">
+        <div class="ac-visual">
+          <div class="ac-grid"></div>
+          <div class="ac-ellipse">
+            <svg width="356" height="196" viewBox="0 0 356 180" fill="none">
+              <rect width="356" height="180" fill="url(#ac-rad-2)" />
+              <defs>
+                <radialGradient id="ac-rad-2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(178 98) rotate(90) scale(98 178)">
+                  <stop stop-color="var(--ac-main)" stop-opacity="0.25" />
+                  <stop offset="0.34" stop-color="var(--ac-main)" stop-opacity="0.15" />
+                  <stop offset="1" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="ac-layer1">
+            <div class="ac-pill"><div class="ac-pill-dot" style="background:var(--ac-main)"></div><span>Insight Engine</span></div>
+          </div>
+          <div class="ac-layer2">
+            <div class="ac-tooltip">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="ac-pill-dot" style="background:var(--ac-main)"></div>
+                <span style="font-size:12px;color:#fff;font-family:'SG'">Generative BI</span>
+              </div>
+              <p style="font-size:11px;color:#a0a0a0;margin:4px 0 0;font-family:'JB'">Narratives built for executives.</p>
+            </div>
+          </div>
+          <div class="ac-layer3"></div>
+          <div class="ac-layer4">
+            <svg width="356" height="180">
+              <rect width="15" x="80" class="ac-rect" rx="2" ry="2" style="--h: 40px; --y: 90px; --hh: 60px; --hy: 70px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="120" class="ac-rect" rx="2" ry="2" style="--h: 30px; --y: 100px; --hh: 80px; --hy: 50px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="160" class="ac-rect" rx="2" ry="2" style="--h: 60px; --y: 70px; --hh: 40px; --hy: 90px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="200" class="ac-rect" rx="2" ry="2" style="--h: 20px; --y: 110px; --hh: 90px; --hy: 40px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="240" class="ac-rect" rx="2" ry="2" style="--h: 50px; --y: 80px; --hh: 30px; --hy: 100px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="ac-body">
+          <h3>AI-Driven Insights</h3>
+          <p>Generate executive-ready narratives and actionable intelligence instantly from raw data.</p>
+        </div>
+      </div>
+
+      <div class="anim-card" style="--ac-main: #10b981; --ac-sec: #34d399;">
+        <div class="ac-visual">
+          <div class="ac-grid"></div>
+          <div class="ac-ellipse">
+            <svg width="356" height="196" viewBox="0 0 356 180" fill="none">
+              <rect width="356" height="180" fill="url(#ac-rad-3)" />
+              <defs>
+                <radialGradient id="ac-rad-3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(178 98) rotate(90) scale(98 178)">
+                  <stop stop-color="var(--ac-main)" stop-opacity="0.25" />
+                  <stop offset="0.34" stop-color="var(--ac-main)" stop-opacity="0.15" />
+                  <stop offset="1" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="ac-layer1">
+            <div class="ac-pill"><div class="ac-pill-dot" style="background:var(--ac-main)"></div><span>99.9% Uptime</span></div>
+          </div>
+          <div class="ac-layer2">
+            <div class="ac-tooltip">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="ac-pill-dot" style="background:var(--ac-main)"></div>
+                <span style="font-size:12px;color:#fff;font-family:'SG'">Live Dashboards</span>
+              </div>
+              <p style="font-size:11px;color:#a0a0a0;margin:4px 0 0;font-family:'JB'">Streaming data instantly.</p>
+            </div>
+          </div>
+          <div class="ac-layer3"></div>
+          <div class="ac-layer4">
+            <svg width="356" height="180">
+              <rect width="15" x="60" class="ac-rect" rx="2" ry="2" style="--h: 50px; --y: 80px; --hh: 70px; --hy: 60px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="110" class="ac-rect" rx="2" ry="2" style="--h: 30px; --y: 100px; --hh: 50px; --hy: 80px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="160" class="ac-rect" rx="2" ry="2" style="--h: 80px; --y: 50px; --hh: 40px; --hy: 90px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+              <rect width="15" x="210" class="ac-rect" rx="2" ry="2" style="--h: 40px; --y: 90px; --hh: 80px; --hy: 50px; --f: rgba(255,255,255,0.15); --hf: var(--ac-sec);"></rect>
+              <rect width="15" x="260" class="ac-rect" rx="2" ry="2" style="--h: 60px; --y: 70px; --hh: 30px; --hy: 100px; --f: var(--ac-main); --hf: var(--ac-main);"></rect>
+            </svg>
+          </div>
+        </div>
+        <div class="ac-body">
+          <h3>Real-time BI Dashboards</h3>
+          <p>Dynamic, self-updating visual dashboards tailored specifically for your operational KPIs.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="solutions" class="new-section alt-bg">
+  <div class="ns-container">
+    <h2 class="ns-title">Solutions by Function</h2>
+    <div class="solutions-grid">
+      <div class="solution-card">
+        <h4>Financial Forecasting</h4>
+        <p>Consolidate ledger data, predict revenue trends, and automate variance analysis reporting.</p>
+      </div>
+      <div class="solution-card">
+        <h4>Marketing ROI</h4>
+        <p>Unify ad spend, CRM data, and web analytics to attribute precise value to every campaign.</p>
+      </div>
+      <div class="solution-card">
+        <h4>Sales Operations</h4>
+        <p>Track pipeline velocity, forecast closures, and identify at-risk accounts before they churn.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.agentic-factory-3d {
+  width: 100%;
+  contain: layout;
+  color-scheme: dark;
+  --bg: #000000;
+  --white: #f4f1ea;
+  --amber: #ff7a1a;
+  --muted: #81848b;
+  --line: rgba(244, 241, 234, 0.11);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--white);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+.agentic-factory-3d * { box-sizing: border-box; }
+.agentic-factory-3d button { font: inherit; color: inherit; cursor: pointer; background: none; border: none; }
+.agentic-factory-3d #scene { position: absolute; inset: 0; touch-action: none; outline: none; }
+.agentic-factory-3d #scene canvas { display: block; width: 100%; height: 100%; }
+.agentic-factory-3d .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 48%, transparent 30%, rgba(0, 0, 0, 0.12) 64%, rgba(0, 0, 0, 0.65) 100%); }
+.agentic-factory-3d .topbar { position: absolute; inset: 28px 32px auto; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+.agentic-factory-3d .identity { display: flex; gap: 13px; align-items: center; }
+.agentic-factory-3d .mark { width: 30px; height: 30px; border: 1px solid #55502f; border-radius: 9px; display: grid; place-items: center; color: var(--amber); background: #1c1b14; }
+.agentic-factory-3d .identity strong { display: block; font-weight: 550; letter-spacing: -0.2px; font-size: 13px; }
+.agentic-factory-3d .identity small { display: block; margin-top: 5px; font-size: 9px; letter-spacing: 1.55px; color: #73777f; text-transform: uppercase; }
+.agentic-factory-3d .status { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 0.1px; color: #a6a79f; }
+.agentic-factory-3d .status i { width: 5px; height: 5px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px #ff7a1a60; }
+.agentic-factory-3d .status.paused i { background: #777; box-shadow: none; }
+.agentic-factory-3d .scene-heading { position: absolute; top: 110px; left: 24%; right: 24%; pointer-events: none; display: flex; align-items: center; gap: 12px; font-size: 9px; letter-spacing: 1.8px; color: #959790; text-transform: uppercase; }
+.agentic-factory-3d .scene-heading:before { content: ''; width: 22px; height: 1px; background: var(--amber); }
+.agentic-factory-3d .scene-heading .index { margin-left: auto; color: #4e535b; }
+.agentic-factory-3d .coordinates { position: absolute; top: 150px; right: 33px; color: #52575f; writing-mode: vertical-rl; font: 9px ui-monospace, Menlo, monospace; letter-spacing: 1.5px; pointer-events: none; }
+.agentic-factory-3d .controls { position: absolute; bottom: 79px; left: 26px; right: 26px; display: flex; align-items: center; flex-direction: column; gap: 16px; z-index: 5; }
+.agentic-factory-3d .mode-bar { display: flex; gap: 3px; align-items: center; padding: 5px; border: 1px solid #ffffff13; border-radius: 12px; background: rgba(25, 28, 32, 0.87); box-shadow: 0 8px 30px #0003, inset 0 1px 0 #ffffff03; backdrop-filter: blur(16px); }
+.agentic-factory-3d .mode-bar button { color: #a2a4a8; white-space: nowrap; padding: 11px 15px; display: flex; gap: 8px; align-items: center; font-size: 11px; font-weight: 500; border-radius: 8px; }
+.agentic-factory-3d .mode-bar button[aria-pressed='true'] { background: var(--amber); color: #211c0d; box-shadow: 0 2px 12px #ff7a1a12; }
+.agentic-factory-3d .mode-bar svg { width: 14px; height: 14px; }
+.agentic-factory-3d .camera-row { display: flex; align-items: center; gap: 4px; }
+.agentic-factory-3d .camera-row button { color: #6e747e; padding: 5px 9px; font-size: 10px; }
+.agentic-factory-3d .camera-row button[aria-pressed='true'] { color: var(--white); }
+.agentic-factory-3d .camera-row button[aria-pressed='true']:after { content: ''; display: block; width: 3px; height: 3px; background: var(--amber); border-radius: 50%; margin: 5px auto -8px; }
+.agentic-factory-3d .camera-row .divider { width: 1px; height: 13px; background: var(--line); margin: 0 8px; }
+.agentic-factory-3d .footer { position: absolute; bottom: 25px; left: 32px; right: 32px; display: flex; justify-content: space-between; gap: 12px; pointer-events: none; }
+.agentic-factory-3d .wordmark { font-size: 11px; color: #6d7178; text-decoration: none; pointer-events: auto; }
+.agentic-factory-3d #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.agentic-factory-3d .station-label { position: absolute; left: 0; top: 0; opacity: 0; transition: opacity 0.3s; will-change: transform; pointer-events: none; min-width: 138px; }
+.agentic-factory-3d .station-label.visible { opacity: 1; }
+.agentic-factory-3d .station-label .stem { height: 26px; width: 1px; background: linear-gradient(#ff7a1a00, #ff7a1a70); margin: 0 0 0 10px; }
+.agentic-factory-3d .station-label .label-card { background: #14171bee; backdrop-filter: blur(10px); border: 1px solid #ff7a1a40; border-radius: 6px; padding: 10px 13px; }
+.agentic-factory-3d .station-label .label-title { font-weight: 550; font-size: 12px; display: flex; gap: 10px; }
+.agentic-factory-3d .station-label .label-title span { color: var(--amber); }
+.agentic-factory-3d #tooltip { position: absolute; pointer-events: none; z-index: 10; opacity: 0; padding: 11px 14px; border: 1px solid #ffffff1a; background: #171a20ed; backdrop-filter: blur(12px); border-radius: 7px; max-width: 240px; }
+.agentic-factory-3d #tooltip.visible { opacity: 1; }
+.agentic-factory-3d #loading { position: absolute; left: 50%; top: 48%; transform: translate(-50%, -50%); display: flex; gap: 12px; color: #8c8f95; font-size: 11px; z-index: 20; transition: opacity 0.4s; }
+.agentic-factory-3d #loading.done { opacity: 0; pointer-events: none; }
+.agentic-factory-3d #loading i { height: 18px; width: 18px; border-radius: 50%; border: 1px solid #ff7a1a22; border-top-color: var(--amber); animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.agentic-factory-3d #journey { position: absolute; left: 24%; right: 24%; top: 148px; opacity: 0; transition: 0.4s; display: flex; align-items: center; gap: 13px; }
+.agentic-factory-3d #journey.visible { opacity: 1; }
+.agentic-factory-3d .journey-icon { width: 28px; height: 28px; border: 1px solid #ff7a1a40; border-radius: 50%; display: grid; place-items: center; color: var(--amber); }
+.agentic-factory-3d #journey .track { height: 2px; background: #ffffff0b; flex: 1; margin-left: 8px; }
+.agentic-factory-3d #journey .track i { display: block; height: 100%; background: var(--amber); width: 0; }
+
+/* New Sections */
+.new-section {
+  position: relative;
+  width: 100%;
+  padding: calc(120 * var(--s)) 0;
+  background: #050608;
+  z-index: 2;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.new-section.alt-bg {
+  background: #020304;
+}
+.ns-container {
+  max-width: calc(1080 * var(--s));
+  margin: 0 auto;
+  padding: 0 calc(70 * var(--s));
+}
+.ns-title {
+  font-family: 'SG';
+  font-weight: 400;
+  font-size: calc(42 * var(--s));
+  letter-spacing: calc(-1.5 * var(--s));
+  color: #fff;
+  margin: 0 0 calc(60 * var(--s)) 0;
+}
+.ns-title::before {
+  content: '';
+  display: block;
+  width: calc(30 * var(--s));
+  height: calc(2 * var(--s));
+  background: var(--red);
+  margin-bottom: calc(20 * var(--s));
+}
+
+/* Animated Cards Grid */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(24 * var(--s));
+}
+.bento-large {
+  grid-column: span 2;
+}
+
+/* Anim Card Container */
+.anim-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(16 * var(--s));
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: #0d0f12;
+  transition: border-color 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+.anim-card:hover { border-color: rgba(255, 122, 26, 0.3); }
+
+.ac-visual {
+  height: calc(180 * var(--s));
+  position: relative;
+  overflow: hidden;
+  border-top-left-radius: calc(16 * var(--s));
+  border-top-right-radius: calc(16 * var(--s));
+  --ac-main: #ff7a1a;
+  --ac-sec: #f54900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Grid Layer */
+.ac-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  opacity: 0.7;
+  pointer-events: none;
+  background-image: linear-gradient(to right, rgba(128,128,128,0.08) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(128,128,128,0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: center;
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 60%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 60%, transparent 100%);
+}
+
+/* Ellipse Gradient */
+.ac-ellipse {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ac-ellipse svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Layer 1 - Pills */
+.ac-layer1 {
+  position: absolute;
+  top: calc(16 * var(--s));
+  left: calc(16 * var(--s));
+  z-index: 8;
+  display: flex;
+  gap: 4px;
+  transition: opacity 0.3s ease-in-out;
+}
+.anim-card:hover .ac-layer1 { opacity: 0; }
+.ac-pill {
+  display: flex;
+  align-items: center;
+  border-radius: 99px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.25);
+  backdrop-filter: blur(4px);
+  padding: 2px 6px;
+}
+.ac-pill-dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+.ac-pill span { font-size: 10px; color: #fff; font-family: 'JB'; }
+
+/* Layer 2 - Tooltip */
+.ac-layer2 {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(16 * var(--s));
+  transform: translateY(100%);
+  transition: transform 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+}
+.anim-card:hover .ac-layer2 { transform: translateY(0); }
+.ac-tooltip {
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.25);
+  backdrop-filter: blur(4px);
+  padding: 6px 12px;
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.6, 0, 1);
+}
+.anim-card:hover .ac-tooltip { opacity: 1; }
+
+/* Layer 3 - Fade */
+.ac-layer3 {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: all 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+  background: linear-gradient(to bottom, transparent 35%, rgba(255, 122, 26, 0.15) 100%);
+}
+.anim-card:hover .ac-layer3 {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Layer 4 - Bars */
+.ac-layer4 {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+}
+.anim-card:hover .ac-layer4 { transform: scale(1.5); }
+.ac-layer4 svg { width: 100%; height: 100%; }
+.ac-rect {
+  transition: all 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+  fill: var(--f);
+  y: var(--y);
+  height: var(--h);
+}
+.anim-card:hover .ac-rect {
+  fill: var(--hf);
+  y: var(--hy);
+  height: var(--hh);
+}
+
+/* Visual1 Specifics (Marketing ROI) */
+.v1-layer1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  width: 200%;
+  transition: transform 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+}
+.anim-card:hover .v1-layer1 { transform: translateX(-50%); }
+
+.v1-layer2 {
+  position: absolute;
+  top: 0;
+  left: -1px;
+  height: 100%;
+  width: 100%;
+  z-index: 7;
+}
+.v1-layer2 svg { width: 100%; height: 100%; }
+.v1-sweeper {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(to right, transparent 0%, #0d0f12 15%, #0d0f12 100%);
+  transition: transform 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+}
+.anim-card:hover .v1-sweeper { transform: translateX(100%); }
+
+.v1-layer3 {
+  position: absolute;
+  top: calc(16 * var(--s));
+  right: calc(16 * var(--s));
+  z-index: 8;
+  display: flex;
+  gap: 4px;
+  transition: opacity 0.3s ease-in-out;
+}
+.anim-card:hover .v1-layer3 { opacity: 0; }
+
+.v1-layer4 {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: calc(16 * var(--s));
+  transform: translateY(-100%);
+  transition: transform 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+}
+.anim-card:hover .v1-layer4 { transform: translateY(0); }
+.ac-layer4 {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+}
+.anim-card:hover .ac-layer4 { transform: scale(1.5); }
+.ac-layer4 svg { width: 100%; height: 100%; }
+.ac-rect {
+  transition: all 0.5s cubic-bezier(0.6, 0.6, 0, 1);
+  fill: var(--f);
+  y: var(--y);
+  height: var(--h);
+}
+.anim-card:hover .ac-rect {
+  fill: var(--hf);
+  y: var(--hy);
+  height: var(--hh);
+}
+
+/* Card Body */
+.ac-body {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: calc(24 * var(--s));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.ac-body h3 {
+  font-family: 'SG';
+  font-weight: 500;
+  font-size: calc(24 * var(--s));
+  color: #fff;
+  margin: 0;
+  letter-spacing: calc(-0.5 * var(--s));
+}
+.ac-body p {
+  font-family: 'JB';
+  font-weight: 400;
+  font-size: calc(14 * var(--s));
+  line-height: 1.6;
+  color: #73777f;
+  margin: 0;
+}
+
+/* Solutions Grid */
+.solutions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(30 * var(--s));
+}
+.solution-card {
+  padding-left: calc(24 * var(--s));
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  transition: border-color 0.3s;
+}
+.solution-card:hover {
+  border-color: var(--amber);
+}
+.solution-card h4 {
+  font-family: 'SG';
+  font-weight: 500;
+  font-size: calc(20 * var(--s));
+  color: #fff;
+  margin: 0 0 calc(12 * var(--s)) 0;
+}
+.solution-card p {
+  font-family: 'JB';
+  font-size: calc(13 * var(--s));
+  line-height: 1.6;
+  color: #6e747e;
+  margin: 0;
+}
+@media (max-width: 1023px) {
+  .bento-grid, .solutions-grid { grid-template-columns: 1fr; }
+  .bento-large { grid-column: 1; }
+  .solution-card { padding-left: 0; border-left: none; padding-top: calc(24 * var(--s)); border-top: 1px solid rgba(255, 255, 255, 0.1); }
+}
+</style>
+<script type="module">
+  import { initMachineScene } from './factory.js?v=8';
+  const root = document.getElementById('platform');
+  
+  function start() {
+    initMachineScene(root, getComputedStyle(root).fontFamily, {
+      embedded: false
+    });
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(start);
+  } else {
+    setTimeout(start, 1000);
+  }
+</script>
+</body>
+</html>
